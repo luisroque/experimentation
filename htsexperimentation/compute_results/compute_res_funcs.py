@@ -111,12 +111,13 @@ def agg_res_bottom_series(results_dict):
 
 
 def calculate_agg_results_all_datasets(
-    datasets: list, err: str, path: str = "../results_probabilistic"
+    datasets: list, algorithms: list, err: str, path: str = "../results_probabilistic"
 ) -> list:
     """Calculate aggregated results for all datasets with the purpose of plotting
 
     Parameters
     ----------
+    :param algorithms: list of algorithms
     :param datasets:  list of datasets
     :param err:  string with the error to be calculated
     :param path: string with the path for the results pickle files
@@ -127,23 +128,17 @@ def calculate_agg_results_all_datasets(
 
     """
     df_orig_list = []
+    res = []
     for d in datasets:
-        dict_gpf = compute_aggreated_results_dict(
-            algorithm="gpf", dataset=d, err_metric=err, path=path
-        )
-        df_gpf = agg_res_full_hierarchy(dict_gpf)
-        dict_mint = compute_aggreated_results_dict(
-            algorithm="mint", dataset=d, err_metric=err, path=path
-        )
-        df_mint = agg_res_full_hierarchy(dict_mint)
-        dict_deepar = compute_aggreated_results_dict(
-            algorithm="deepar", dataset=d, err_metric=err, path=path
-        )
-        df_deepar = agg_res_full_hierarchy(dict_deepar)
-        df_gpf["algorithm"] = "gpf"
-        df_mint["algorithm"] = "mint"
-        df_deepar["algorithm"] = "deepar"
-        df = pd.concat([df_gpf, df_mint, df_deepar])
+        for algo in algorithms:
+            dict_res = compute_aggreated_results_dict(
+                algorithm=algo, dataset=d, err_metric=err, path=path
+            )
+            df_res = agg_res_full_hierarchy(dict_res)
+            df_res["algorithm"] = algo
+            res.append(df_res)
+
+        df = pd.concat(res)
         df_orig = (
             df[(df["version"] == "orig") & (df["error"] == err)]
             .reset_index()
@@ -151,7 +146,7 @@ def calculate_agg_results_all_datasets(
         )
 
         # sort values by algorithm to plot gpf -> mint -> deepar
-        sorter = ["gpf", "mint", "deepar"]
+        sorter = ["gpf", "mint", "deepar", "standard_gp_zer", "standard_gp_lin", "standard_gp_pie"]
         df_orig = df_orig.sort_values(by="group")
         df_orig.algorithm = df_orig.algorithm.astype("category")
         df_orig.algorithm.cat.set_categories(sorter, inplace=True)
