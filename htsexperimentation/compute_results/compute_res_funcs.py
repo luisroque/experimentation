@@ -131,15 +131,15 @@ def calculate_agg_results_all_datasets(
         dict_gpf = compute_aggreated_results_dict(
             algorithm="gpf", dataset=d, err_metric=err, path=path
         )
-        df_gpf = compute_aggregated_results_df(dict_gpf)
+        df_gpf = agg_res_full_hierarchy(dict_gpf)
         dict_mint = compute_aggreated_results_dict(
             algorithm="mint", dataset=d, err_metric=err, path=path
         )
-        df_mint = compute_aggregated_results_df(dict_mint)
+        df_mint = agg_res_full_hierarchy(dict_mint)
         dict_deepar = compute_aggreated_results_dict(
             algorithm="deepar", dataset=d, err_metric=err, path=path
         )
-        df_deepar = compute_aggregated_results_df(dict_deepar)
+        df_deepar = agg_res_full_hierarchy(dict_deepar)
         df_gpf["algorithm"] = "gpf"
         df_mint["algorithm"] = "mint"
         df_deepar["algorithm"] = "deepar"
