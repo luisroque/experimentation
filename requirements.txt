@@ -1,0 +1,3 @@
+setuptools~=58.0.4
+tsaugmentation~=0.3.3
+pandas~=1.2.5

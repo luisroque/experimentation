@@ -6,10 +6,16 @@ from ..helpers.helper_func import keys_exists
 from ..helpers.file_handlers import parse_file_name
 
 
-def compute_aggreated_results_dict(algorithm, dataset, path='../results_probabilistic', err_metric='mase'):
+def compute_aggreated_results_dict(
+    algorithm, dataset, path="../results_probabilistic", err_metric="mase"
+):
     results_dict = {}
-    for file in [path for path in os.listdir(path) if algorithm in path and dataset in path and 'orig' in path]:
-        with open(f'{path}/{file}', 'rb') as handle:
+    for file in [
+        path
+        for path in os.listdir(path)
+        if algorithm in path and dataset in path and "orig" in path
+    ]:
+        with open(f"{path}/{file}", "rb") as handle:
             sample, version, transformation = parse_file_name(file, dataset)
             if not keys_exists(results_dict, transformation):
                 results_dict[transformation] = {}
@@ -25,11 +31,15 @@ def compute_aggreated_results_dict(algorithm, dataset, path='../results_probabil
 
             # We are getting the results for each group as lists and we want to store it
             # as objects such as {'mase': {bottom_ind_1: value}, {bottom_ind_2: value}}
-            for (k, v_) in results_dict_temp[transformation][version][sample][err_metric].items():
+            for (k, v_) in results_dict_temp[transformation][version][sample][
+                err_metric
+            ].items():
                 # if it is the original versions we only want to get the individual results
                 try:
                     for i in range(len(v_)):
-                        results_dict[transformation][version][sample][err_metric][f'{k}_{i}'] = v_[i]
+                        results_dict[transformation][version][sample][err_metric][
+                            f"{k}_{i}"
+                        ] = v_[i]
                 except TypeError:
                     # the group has individual results
                     pass
@@ -42,19 +52,31 @@ def compute_aggregated_results_df(results_dict):
     # metric = mase, rmse
     # dim = bottom, total, state, gender, legal, all
 
-    df = pd.DataFrame.from_dict({(i, j, k, l): results_dict[i][j][k][l]
-                                 for i in results_dict.keys()
-                                 for j in results_dict[i].keys()
-                                 for k in results_dict[i][j].keys()
-                                 for l in results_dict[i][j][k].keys()}, orient='index')
+    df = pd.DataFrame.from_dict(
+        {
+            (i, j, k, l): results_dict[i][j][k][l]
+            for i in results_dict.keys()
+            for j in results_dict[i].keys()
+            for k in results_dict[i][j].keys()
+            for l in results_dict[i][j][k].keys()
+        },
+        orient="index",
+    )
     df = df.reset_index()
-    df.rename(columns={'level_0': 'transformation',
-                       'level_1': 'version',
-                       'level_2': 'sample',
-                       'level_3': 'error', }, inplace=True)
-    df = df.melt(id_vars=['transformation', 'version', 'sample', 'error'],
-                 var_name='group',
-                 value_name='value')
+    df.rename(
+        columns={
+            "level_0": "transformation",
+            "level_1": "version",
+            "level_2": "sample",
+            "level_3": "error",
+        },
+        inplace=True,
+    )
+    df = df.melt(
+        id_vars=["transformation", "version", "sample", "error"],
+        var_name="group",
+        value_name="value",
+    )
 
     return df
 
@@ -62,9 +84,9 @@ def compute_aggregated_results_df(results_dict):
 def agg_res_full_hierarchy(results_dict):
     df = compute_aggregated_results_df(results_dict)
 
-    df = df.groupby(['group', 'version', 'sample', 'error']).mean().reset_index()
-    df['group'] = df['group'].str.split('_').str[0]
-    df['group'] = df['group'].str.lower()
+    df = df.groupby(["group", "version", "sample", "error"]).mean().reset_index()
+    df["group"] = df["group"].str.split("_").str[0]
+    df["group"] = df["group"].str.lower()
     df.dropna(inplace=True)
 
     return df
@@ -73,13 +95,24 @@ def agg_res_full_hierarchy(results_dict):
 def agg_res_bottom_series(results_dict):
     df = compute_aggregated_results_df(results_dict)
 
-    df_bottom = df.loc[df.group.str.contains('bottom')].groupby(['error', 'group']).mean().reset_index()
-    df_bottom['order'] = df_bottom['group'].str.split('_').str[2].astype('int32')
-    df_bottom['group'] = df_bottom['group'].str.split('_').str[0] + '_' + df_bottom['group'].str.split('_').str[2]
-    return df_bottom.set_index('order').sort_values(by='order')
+    df_bottom = (
+        df.loc[df.group.str.contains("bottom")]
+        .groupby(["error", "group"])
+        .mean()
+        .reset_index()
+    )
+    df_bottom["order"] = df_bottom["group"].str.split("_").str[2].astype("int32")
+    df_bottom["group"] = (
+        df_bottom["group"].str.split("_").str[0]
+        + "_"
+        + df_bottom["group"].str.split("_").str[2]
+    )
+    return df_bottom.set_index("order").sort_values(by="order")
 
 
-def calculate_agg_results_all_datasets(datasets: list, err: str, path: str = '../results_probabilistic') -> list:
+def calculate_agg_results_all_datasets(
+    datasets: list, err: str, path: str = "../results_probabilistic"
+) -> list:
     """Calculate aggregated results for all datasets with the purpose of plotting
 
     Parameters
@@ -95,21 +128,31 @@ def calculate_agg_results_all_datasets(datasets: list, err: str, path: str = '..
     """
     df_orig_list = []
     for d in datasets:
-        dict_gpf = compute_aggreated_results_dict(algorithm='gpf', dataset=d, err_metric=err, path=path)
+        dict_gpf = compute_aggreated_results_dict(
+            algorithm="gpf", dataset=d, err_metric=err, path=path
+        )
         df_gpf = compute_aggregated_results_df(dict_gpf)
-        dict_mint = compute_aggreated_results_dict(algorithm='mint', dataset=d, err_metric=err, path=path)
+        dict_mint = compute_aggreated_results_dict(
+            algorithm="mint", dataset=d, err_metric=err, path=path
+        )
         df_mint = compute_aggregated_results_df(dict_mint)
-        dict_deepar = compute_aggreated_results_dict(algorithm='deepar', dataset=d, err_metric=err, path=path)
+        dict_deepar = compute_aggreated_results_dict(
+            algorithm="deepar", dataset=d, err_metric=err, path=path
+        )
         df_deepar = compute_aggregated_results_df(dict_deepar)
-        df_gpf['algorithm'] = 'gpf'
-        df_mint['algorithm'] = 'mint'
-        df_deepar['algorithm'] = 'deepar'
+        df_gpf["algorithm"] = "gpf"
+        df_mint["algorithm"] = "mint"
+        df_deepar["algorithm"] = "deepar"
         df = pd.concat([df_gpf, df_mint, df_deepar])
-        df_orig = df[(df['version'] == 'orig') & (df['error'] == err)].reset_index().drop(['index'], axis=1)
+        df_orig = (
+            df[(df["version"] == "orig") & (df["error"] == err)]
+            .reset_index()
+            .drop(["index"], axis=1)
+        )
 
         # sort values by algorithm to plot gpf -> mint -> deepar
-        sorter = ['gpf', 'mint', 'deepar']
-        df_orig = df_orig.sort_values(by='group')
+        sorter = ["gpf", "mint", "deepar"]
+        df_orig = df_orig.sort_values(by="group")
         df_orig.algorithm = df_orig.algorithm.astype("category")
         df_orig.algorithm.cat.set_categories(sorter, inplace=True)
         df_orig_list.append(df_orig)
@@ -117,10 +160,13 @@ def calculate_agg_results_all_datasets(datasets: list, err: str, path: str = '..
     return df_orig_list
 
 
-def get_output(dataset, algorithm, transf, path='../results_probabilistic'):
-    for file in [path for path in os.listdir(path)
-                 if algorithm in path and dataset in path and 'orig' in path and transf in path]:
-        with open(f'{path}/{file}', 'rb') as handle:
+def get_output(dataset, algorithm, transf, path="../results_probabilistic"):
+    for file in [
+        path
+        for path in os.listdir(path)
+        if algorithm in path and dataset in path and "orig" in path and transf in path
+    ]:
+        with open(f"{path}/{file}", "rb") as handle:
             e = pickle.load(handle)
             handle.close()
     return e
