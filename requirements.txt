@@ -1,3 +1,8 @@
 setuptools~=58.0.4
 tsaugmentation~=0.3.3
 pandas~=1.2.5
+tsaugmentation~=0.3.6
+seaborn~=0.11.2
+properscoring~=0.1
+matplotlib~=3.3.4
+
