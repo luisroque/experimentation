@@ -8,7 +8,7 @@ class TestModel(unittest.TestCase):
     def setUp(self):
         self.data = tsag.preprocessing.PreprocessDatasets("prison").apply_preprocess()
         self.true = self.data["predict"]["data"].reshape((32, 48)).T
-        self.path = "experimentation/tests/results_probabilistic"
+        self.path = "htsexperimentation/tests/results_probabilistic"
 
     def test_results_gpf_parsing_prison(self):
         series = 9

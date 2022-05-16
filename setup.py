@@ -15,7 +15,7 @@ with open(REQUIREMENTS_FILE) as f:
 
 
 def get_version():
-    VERSIONFILE = join("experimentation", "__init__.py")
+    VERSIONFILE = join("htsexperimentation", "__init__.py")
     lines = open(VERSIONFILE).readlines()
     version_regex = r"^__version__ = ['\"]([^'\"]*)['\"]"
     for line in lines:
@@ -27,7 +27,7 @@ def get_version():
 
 # Setting up
 setup(
-    name="experimentation",
+    name="htsexperimentation",
     version=get_version(),
     author="Luis Roque",
     author_email="<roque0luis@gmail.com>",

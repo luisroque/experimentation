@@ -11,7 +11,7 @@ class TestModel(unittest.TestCase):
             calculate_agg_results_all_datasets(
                 self.datasets,
                 "mase",
-                path="experimentation/tests/results_probabilistic",
+                path="htsexperimentation/tests/results_probabilistic",
             )[0].shape,
             (270, 6),
         )
