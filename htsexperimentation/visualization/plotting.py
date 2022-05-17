@@ -1,6 +1,6 @@
 from ..compute_results.compute_res_funcs import (
-    compute_aggreated_results_dict,
     agg_res_bottom_series,
+    compute_aggreated_results_dict,
 )
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -31,9 +31,19 @@ def plot_compare_err_metric(err="mase", dataset="prison"):
 
 
 def boxplot_error(df_res, err, datasets):
-    _, ax = plt.subplots(len(datasets), 1, figsize=(20, 10 * len(datasets)))
-    for i in range(len(datasets)):
-        fg = sns.boxplot(x="group", y="value", hue="algorithm", data=df_res[i], ax=ax)
-        ax.set_title(datasets[i] + " - " + err, fontsize=20)
+    if len(datasets) == 1:
+        _, ax = plt.subplots(1, 1, figsize=(20, 10 * 1))
+        fg = sns.boxplot(x="group", y="value", hue="algorithm", data=df_res[0], ax=ax)
+        ax.set_title(datasets[0] + " - " + err, fontsize=20)
+        plt.legend()
+        plt.show()
+    else:
+        _, ax = plt.subplots(len(datasets), 1, figsize=(20, 10 * len(datasets)))
+        ax = ax.ravel()
+        for i in range(len(datasets)):
+            fg = sns.boxplot(
+                x="group", y="value", hue="algorithm", data=df_res[i], ax=ax[i]
+            )
+            ax[i].set_title(datasets[i] + " - " + err, fontsize=20)
         plt.legend()
         plt.show()
