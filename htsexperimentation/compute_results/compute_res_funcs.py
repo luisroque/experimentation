@@ -146,8 +146,8 @@ def calculate_agg_results_all_datasets(
 
     """
     df_orig_list = []
-    res = []
     for d in datasets:
+        res = []
         for algo in algorithms:
             dict_res = compute_aggreated_results_dict(
                 algorithm=algo, dataset=d, err_metric=err, path=path
