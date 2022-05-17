@@ -110,6 +110,24 @@ def agg_res_bottom_series(results_dict):
     return df_bottom.set_index("order").sort_values(by="order")
 
 
+def calculate_computing_time(
+    datasets: list, algorithms: list, path: str = "../results_probabilistic"
+):
+    res = []
+    for d in datasets:
+        for algo in algorithms:
+            res.append(
+                pd.DataFrame(
+                    compute_aggreated_results_dict(
+                        algorithm=algo, dataset=d, path=path
+                    ),
+                    index=[algo],
+                )
+            )
+        df = pd.concat(res)
+        pass
+
+
 def calculate_agg_results_all_datasets(
     datasets: list, algorithms: list, err: str, path: str = "../results_probabilistic"
 ) -> list:
@@ -134,9 +152,10 @@ def calculate_agg_results_all_datasets(
             dict_res = compute_aggreated_results_dict(
                 algorithm=algo, dataset=d, err_metric=err, path=path
             )
-            df_res = agg_res_full_hierarchy(dict_res)
-            df_res["algorithm"] = algo
-            res.append(df_res)
+            if dict_res:
+                df_res = agg_res_full_hierarchy(dict_res)
+                df_res["algorithm"] = algo
+                res.append(df_res)
 
         df = pd.concat(res)
         df_orig = (
