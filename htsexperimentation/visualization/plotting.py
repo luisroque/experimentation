@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_compare_err_metric(err="mase", dataset="prison"):
+def plot_compare_err_metric(err="mase", dataset="prison", figsize=(20, 10)):
     dict_gpf = compute_aggreated_results_dict(
         algorithm="gpf", dataset=dataset, err_metric=err
     )
@@ -19,7 +19,7 @@ def plot_compare_err_metric(err="mase", dataset="prison"):
         algorithm="deepar", dataset=dataset, err_metric=err
     )
     df_deepar_bottom = agg_res_bottom_series(dict_deepar)
-    fig, ax = plt.subplots(1, 3, figsize=(20, 10))
+    fig, ax = plt.subplots(1, 3, figsize=figsize)
     ax = ax.ravel()
     sns.barplot(x="value", y="group", data=df_gpf_bottom, color="blue", ax=ax[0])
     ax[0].set_title("gpf")

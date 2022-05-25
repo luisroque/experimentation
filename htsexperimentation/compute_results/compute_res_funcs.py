@@ -83,7 +83,7 @@ def compute_aggregated_results_df(results_dict):
 
 def agg_res_full_hierarchy(results_dict):
     df = compute_aggregated_results_df(results_dict)
-
+    df[['value']] = df[['value']].astype('float')
     df = df.groupby(["group", "version", "sample", "error"]).mean().reset_index()
     df["group"] = df["group"].str.split("_").str[0]
     df["group"] = df["group"].str.lower()

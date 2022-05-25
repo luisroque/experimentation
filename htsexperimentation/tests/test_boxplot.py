@@ -6,7 +6,7 @@ from ..visualization.plotting import boxplot_error
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism"]
+        self.datasets = ["prison", "tourism", "m5", "police"]
         self.algorithms = [
             "gpf",
             "mint",
