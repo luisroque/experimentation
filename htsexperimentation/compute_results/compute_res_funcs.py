@@ -165,16 +165,7 @@ def calculate_agg_results_all_datasets(
         )
 
         # sort values by algorithm to plot gpf -> mint -> deepar
-        sorter = [
-            "gpf",
-            "mint",
-            "deepar",
-            "standard_gp_zer",
-            "standard_gp_lin",
-            "standard_gp_pie",
-            "ets_bu",
-            "arima_bu",
-        ]
+        sorter = algorithms
         df_orig = df_orig.sort_values(by="group")
         df_orig.algorithm = df_orig.algorithm.astype("category")
         df_orig.algorithm.cat.set_categories(sorter, inplace=True)
