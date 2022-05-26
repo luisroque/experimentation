@@ -6,7 +6,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_compare_err_metric(err="mase", dataset="prison", figsize=(20, 10), path="../results_probabilistic"):
+def plot_compare_err_metric(
+    err="mase", dataset="prison", figsize=(20, 10), path="../results_probabilistic"
+):
     dict_gpf = compute_aggreated_results_dict(
         algorithm="gpf", dataset=dataset, err_metric=err, path=path
     )
@@ -40,7 +42,11 @@ def boxplot_error(df_res, err, datasets):
         plt.legend()
         plt.show()
     else:
-        _, ax = plt.subplots(len(datasets), 1, figsize=(20, 10 * len(datasets)))
+        _, ax = plt.subplots(
+            len(datasets) // 2 + len(datasets) % 2,
+            len(datasets) // 2 + len(datasets) % 2,
+            figsize=(20, 10 * len(datasets)),
+        )
         ax = ax.ravel()
         for i in range(len(datasets)):
             fg = sns.boxplot(
