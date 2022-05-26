@@ -1,7 +1,7 @@
 import unittest
 from ..compute_results.compute_res_funcs import calculate_agg_results_all_datasets
 from ..config import RESULTS_PATH
-from ..visualization.plotting import boxplot_error
+from ..visualization.plotting import boxplot_error, plot_compare_err_metric
 
 
 class TestModel(unittest.TestCase):
@@ -25,4 +25,8 @@ class TestModel(unittest.TestCase):
         )
 
         boxplot_error(df_orig_list, 'mase', self.datasets)
+
+    def test_plot_compare_err_metric(self):
+        plot_compare_err_metric(dataset='tourism', figsize=(20, 60), path=RESULTS_PATH)
+
 

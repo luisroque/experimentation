@@ -6,17 +6,17 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_compare_err_metric(err="mase", dataset="prison", figsize=(20, 10)):
+def plot_compare_err_metric(err="mase", dataset="prison", figsize=(20, 10), path="../results_probabilistic"):
     dict_gpf = compute_aggreated_results_dict(
-        algorithm="gpf", dataset=dataset, err_metric=err
+        algorithm="gpf", dataset=dataset, err_metric=err, path=path
     )
     df_gpf_bottom = agg_res_bottom_series(dict_gpf)
     dict_mint = compute_aggreated_results_dict(
-        algorithm="mint", dataset=dataset, err_metric=err
+        algorithm="mint", dataset=dataset, err_metric=err, path=path
     )
     df_mint_bottom = agg_res_bottom_series(dict_mint)
     dict_deepar = compute_aggreated_results_dict(
-        algorithm="deepar", dataset=dataset, err_metric=err
+        algorithm="deepar", dataset=dataset, err_metric=err, path=path
     )
     df_deepar_bottom = agg_res_bottom_series(dict_deepar)
     fig, ax = plt.subplots(1, 3, figsize=figsize)
@@ -27,7 +27,9 @@ def plot_compare_err_metric(err="mase", dataset="prison", figsize=(20, 10)):
     ax[1].set_title("mint")
     sns.barplot(x="value", y="group", data=df_deepar_bottom, color="green", ax=ax[2])
     ax[2].set_title("deepar")
-    fig.suptitle(dataset + " - " + err)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.95)
+    plt.show()
 
 
 def boxplot_error(df_res, err, datasets):
