@@ -24,7 +24,7 @@ class TestModel(unittest.TestCase):
             path=RESULTS_PATH,
         )
 
-        boxplot_error(df_orig_list, 'mase', self.datasets)
+        boxplot_error(df_orig_list, 'mase', self.datasets, figsize=(20, 10))
 
     def test_plot_compare_err_metric(self):
         plot_compare_err_metric(dataset='tourism', figsize=(20, 60), path=RESULTS_PATH)

@@ -34,9 +34,9 @@ def plot_compare_err_metric(
     plt.show()
 
 
-def boxplot_error(df_res, err, datasets):
+def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
     if len(datasets) == 1:
-        _, ax = plt.subplots(1, 1, figsize=(20, 10 * 1))
+        _, ax = plt.subplots(1, 1, figsize=figsize)
         fg = sns.boxplot(x="group", y="value", hue="algorithm", data=df_res[0], ax=ax)
         ax.set_title(datasets[0] + " - " + err, fontsize=20)
         plt.legend()
@@ -45,7 +45,7 @@ def boxplot_error(df_res, err, datasets):
         _, ax = plt.subplots(
             len(datasets) // 2 + len(datasets) % 2,
             len(datasets) // 2 + len(datasets) % 2,
-            figsize=(20, 10 * len(datasets)),
+            figsize=figsize,
         )
         ax = ax.ravel()
         for i in range(len(datasets)):
