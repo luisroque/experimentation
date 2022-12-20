@@ -38,7 +38,7 @@ def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
     if len(datasets) == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
         fg = sns.boxplot(x="group", y="value", hue="algorithm", data=df_res[0], ax=ax)
-        ax.set_title(datasets[0] + " - " + err, fontsize=20)
+        ax.set_title(datasets[0], fontsize=20)
         plt.legend()
         plt.show()
     else:
