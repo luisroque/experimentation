@@ -52,6 +52,6 @@ def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
             fg = sns.boxplot(
                 x="group", y="value", hue="algorithm", data=df_res[i], ax=ax[i]
             )
-            ax[i].set_title(datasets[i] + " - " + err, fontsize=20)
+            ax[i].set_title(datasets[i], fontsize=20)
         plt.legend()
         plt.show()
