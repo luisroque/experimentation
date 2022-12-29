@@ -1,1 +1,0 @@
-RESULTS_PATH = '/home/mach1ne/run_models_distributed/results_probabilistic/'

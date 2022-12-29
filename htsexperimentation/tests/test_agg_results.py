@@ -1,5 +1,5 @@
 import unittest
-from ..compute_results.compute_res_funcs import calculate_agg_results_all_datasets
+from ..compute_results.compute_res_funcs import calculate_agg_results_all_datasets, load_aggregate_results_algorithm
 from ..config import RESULTS_PATH
 
 

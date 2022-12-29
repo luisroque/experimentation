@@ -5,17 +5,16 @@ import os
 from ..helpers.helper_func import keys_exists
 from ..helpers.file_handlers import parse_file_name
 
-
 def compute_aggreated_results_dict(
-    algorithm, dataset, path="../results_probabilistic", err_metric="mase"
+    algorithm, dataset, path="../results", err_metric="mase"
 ):
     results_dict = {}
     for file in [
         path
-        for path in os.listdir(path)
-        if algorithm in path and dataset in path and "orig" in path
+        for path in os.listdir(f"{path}/{algorithm}")
+        if dataset in path and "orig" in path
     ]:
-        with open(f"{path}/{file}", "rb") as handle:
+        with open(f"{path}/{algorithm}/{file}", "rb") as handle:
             sample, version, transformation = parse_file_name(file, dataset)
             if not keys_exists(results_dict, transformation):
                 results_dict[transformation] = {}
@@ -83,7 +82,7 @@ def compute_aggregated_results_df(results_dict):
 
 def agg_res_full_hierarchy(results_dict):
     df = compute_aggregated_results_df(results_dict)
-    df[['value']] = df[['value']].astype('float')
+    df[["value"]] = df[["value"]].astype("float")
     df = df.groupby(["group", "version", "sample", "error"]).mean().reset_index()
     df["group"] = df["group"].str.split("_").str[0]
     df["group"] = df["group"].str.lower()
@@ -111,7 +110,7 @@ def agg_res_bottom_series(results_dict):
 
 
 def calculate_computing_time(
-    datasets: list, algorithms: list, path: str = "../results_probabilistic"
+    datasets: list, algorithms: list, path: str = "../results"
 ):
     res = []
     for d in datasets:
@@ -129,7 +128,7 @@ def calculate_computing_time(
 
 
 def calculate_agg_results_all_datasets(
-    datasets: list, algorithms: list, err: str, path: str = "../results_probabilistic"
+    datasets: list, algorithms: list, err: str, path: str = "../results"
 ) -> list:
     """Calculate aggregated results for all datasets with the purpose of plotting
 
@@ -174,7 +173,7 @@ def calculate_agg_results_all_datasets(
     return df_orig_list
 
 
-def get_output(dataset, algorithm, transf, path="../results_probabilistic"):
+def get_output(dataset, algorithm, transf, path="../results"):
     for file in [
         path
         for path in os.listdir(path)
