@@ -1,45 +1,47 @@
 import unittest
 import pandas as pd
+import pickle
+
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.config import RESULTS_PATH
-from htsexperimentation.visualization.plotting import boxplot
+from htsexperimentation.visualization.plotting import boxplot, plot_predictions_hierarchy
 
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism", "m5", "police"]
+        self.datasets = ["prison", "tourism"]
+        data = {}
+        for i in range(len(self.datasets)):
+            with open(
+                    f"./data/data_{self.datasets[i]}.pickle",
+                    "rb",
+            ) as handle:
+                data[i] = pickle.load(handle)
+
         self.results_prison_gpf = ResultsHandler(
-            path=RESULTS_PATH, dataset=self.datasets[0], algorithms=["gpf"]
+            path=RESULTS_PATH,
+            dataset=self.datasets[0],
+            algorithms=["gpf"],
+            groups=data[0],
         )
         self.results_tourism_gpf = ResultsHandler(
-            path=RESULTS_PATH, dataset=self.datasets[1], algorithms=["gpf"]
-        )
-        self.results_m5_gpf = ResultsHandler(
-            path=RESULTS_PATH, dataset=self.datasets[2], algorithms=["gpf"]
-        )
-        self.results_police_gpf = ResultsHandler(
-            path=RESULTS_PATH, dataset=self.datasets[3], algorithms=["gpf"]
+            path=RESULTS_PATH,
+            dataset=self.datasets[1],
+            algorithms=["gpf"],
+            groups=data[1],
         )
 
         self.results_prison = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[0],
             algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
+            groups=data[0],
         )
         self.results_tourism = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[1],
             algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
-        )
-        self.results_m5 = ResultsHandler(
-            path=RESULTS_PATH,
-            dataset=self.datasets[2],
-            algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
-        )
-        self.results_police = ResultsHandler(
-            path=RESULTS_PATH,
-            dataset=self.datasets[3],
-            algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
+            groups=data[1],
         )
 
     def test_results_load(self):
@@ -54,8 +56,6 @@ class TestModel(unittest.TestCase):
         dataset_res = {}
         dataset_res[self.datasets[0]] = self.results_prison_gpf.data_to_boxplot("mase")
         dataset_res[self.datasets[1]] = self.results_tourism_gpf.data_to_boxplot("mase")
-        dataset_res[self.datasets[2]] = self.results_m5_gpf.data_to_boxplot("mase")
-        dataset_res[self.datasets[3]] = self.results_police_gpf.data_to_boxplot("mase")
         res = boxplot(datasets_err=dataset_res, err="mase")
 
     def test_compute_diferences_gpf_variants(self):
@@ -69,8 +69,14 @@ class TestModel(unittest.TestCase):
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}
-        dataset_res[self.datasets[0]] = self.results_prison.data_to_boxplot("mase")
-        dataset_res[self.datasets[1]] = self.results_tourism.data_to_boxplot("mase")
-        dataset_res[self.datasets[2]] = self.results_m5.data_to_boxplot("mase")
-        dataset_res[self.datasets[3]] = self.results_police.data_to_boxplot("mase")
+        dataset_res[self.datasets[0]] = self.results_prison.data_to_boxplot(
+            "mase", output_type="metrics"
+        )
+        dataset_res[self.datasets[1]] = self.results_tourism.data_to_boxplot(
+            "mase", output_type="metrics"
+        )
         res = boxplot(datasets_err=dataset_res, err="mase")
+
+    def test_create_plot_hierarchy(self):
+        results_hierarchy, _ = self.results_tourism.compute_results_hierarchy(algorithm='gpf')
+        plot_predictions_hierarchy(*results_hierarchy, self.results_tourism.h)

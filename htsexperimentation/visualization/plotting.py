@@ -8,6 +8,67 @@ from ..compute_results.compute_res_funcs import (
 )
 
 
+def plot_predictions_hierarchy(
+    true_values, mean_predictions, std_predictions, forecast_horizon
+):
+    num_keys = len(true_values)
+    n = true_values["top"].shape[0]
+
+    num_cols = 2
+    num_rows = (num_keys + num_cols - 1) // num_cols
+
+    fig, axs = plt.subplots(num_rows, num_cols, sharex=True, figsize=(14, 8))
+
+    # If the figure only has one subplot, make it a 1D array
+    # so we can iterate over it
+    if num_keys == 1:
+        axs = [axs]
+
+    axs = axs.ravel()
+
+    for i, group in enumerate(true_values):
+        true_vals = true_values[group]
+        mean_preds = mean_predictions[group]
+        std_preds = std_predictions[group]
+
+        # If the arrays are 2D, get the first column
+        if len(true_vals.shape) == 2:
+            true_vals = true_vals[:, 0]
+            mean_preds = mean_preds[:, 0]
+            std_preds = std_preds[:, 0]
+
+        mean_preds_fitted = mean_preds[: n - forecast_horizon]
+        mean_preds_pred = mean_preds[-forecast_horizon:]
+
+        std_preds_fitted = std_preds[: n - forecast_horizon]
+        std_preds_pred = std_preds[-forecast_horizon:]
+
+        axs[i].plot(true_vals, label="True values")
+        axs[i].plot(
+            range(n - forecast_horizon), mean_preds_fitted, label="Mean fitted values"
+        )
+        axs[i].plot(range(n - forecast_horizon, n), mean_preds_pred, label="Mean predictions")
+
+        # Add the 95% interval to the plot
+        axs[i].fill_between(
+            range(n - forecast_horizon),
+            mean_preds_fitted - 2 * std_preds_fitted,
+            mean_preds_fitted + 2 * std_preds_fitted,
+            alpha=0.2, label="Fitting 95% CI"
+        )
+        axs[i].fill_between(
+            range(n-forecast_horizon, n),
+            mean_preds_pred - 2 * std_preds_pred,
+            mean_preds_pred + 2 * std_preds_pred,
+            alpha=0.2, label='Forecast 95% CI'
+        )
+
+        axs[i].set_title(f"{group}")
+    plt.tight_layout()
+    axs[i].legend()
+    plt.show()
+
+
 def plot_compare_err_metric(
     err="mase", dataset="prison", figsize=(20, 10), path="../results_probabilistic"
 ):
@@ -59,9 +120,7 @@ def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
         plt.show()
 
 
-def boxplot(
-    datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (20, 10)
-):
+def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (20, 10)):
     """
     Create a boxplot from the given data.
 
