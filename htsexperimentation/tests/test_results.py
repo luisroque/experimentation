@@ -78,5 +78,5 @@ class TestModel(unittest.TestCase):
         res = boxplot(datasets_err=dataset_res, err="mase")
 
     def test_create_plot_hierarchy(self):
-        results_hierarchy, _ = self.results_tourism.compute_results_hierarchy(algorithm='gpf')
-        plot_predictions_hierarchy(*results_hierarchy, self.results_tourism.h)
+        results_hierarchy, results_by_group_element, group_elements = self.results_prison.compute_results_hierarchy(algorithm='gpf')
+        plot_predictions_hierarchy(*results_hierarchy, *results_by_group_element, group_elements, self.results_prison.h)

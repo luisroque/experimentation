@@ -171,7 +171,7 @@ class ResultsHandler:
         algorithm: str,
         res_type: str = "pred",
         output_type: str = "results",
-    ) -> Tuple[Tuple[Dict, Dict, Dict], Tuple[Dict, Dict, Dict]]:
+    ) -> Tuple[Tuple[Dict, Dict, Dict], Tuple[Dict, Dict, Dict], Dict]:
         self._validate_param(res_type, ["fitpred", "pred"])
         results_algo_mean, algorithm_w_type = self.load_results_algorithm(
             algorithm,
@@ -191,6 +191,8 @@ class ResultsHandler:
         y_group_by_ele = {}
         mean_group_by_ele = {}
         std_group_by_ele = {}
+        group_elements_names = {}
+
         for results_algo_mean, results_algo_std, algo in zip(
             results_algo_mean, results_algo_std, algorithm_w_type
         ):
@@ -215,6 +217,8 @@ class ResultsHandler:
                 mean_group_element = np.zeros((self.n, n_elements_group))
                 std_group_element = np.zeros((self.n, n_elements_group))
 
+                elements_name = []
+
                 for group_idx, element_name in enumerate(group_elements):
                     group_element_active[element_name] = np.where(
                         groups_idx == group_idx, 1, 0
@@ -237,6 +241,9 @@ class ResultsHandler:
                         )
                     )
 
+                    elements_name.append(element_name)
+
+                group_elements_names[group] = elements_name
                 y_group[group] = np.mean(y_group_element, axis=1)
                 y_group_by_ele[group] = y_group_element
                 mean_group[group] = np.mean(mean_group_element, axis=1)
@@ -244,10 +251,14 @@ class ResultsHandler:
                 std_group[group] = np.mean(std_group_element, axis=1)
                 std_group_by_ele[group] = std_group_element
 
-        return (y_group, mean_group, std_group), (
-            y_group_by_ele,
-            mean_group_by_ele,
-            std_group_by_ele,
+        return (
+            (y_group, mean_group, std_group),
+            (
+                y_group_by_ele,
+                mean_group_by_ele,
+                std_group_by_ele,
+            ),
+            group_elements_names,
         )
 
     def data_to_boxplot(

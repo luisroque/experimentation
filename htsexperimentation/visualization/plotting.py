@@ -1,6 +1,6 @@
+from typing import Dict
 import seaborn as sns
 import pandas as pd
-from typing import Dict
 import matplotlib.pyplot as plt
 from ..compute_results.compute_res_funcs import (
     agg_res_bottom_series,
@@ -8,13 +8,72 @@ from ..compute_results.compute_res_funcs import (
 )
 
 
-def plot_predictions_hierarchy(
-    true_values, mean_predictions, std_predictions, forecast_horizon
+def _build_dict_to_plot_hierarchy(
+    true_values,
+    mean_predictions,
+    std_predictions,
+    true_values_by_group_ele,
+    mean_predictions_by_group_ele,
+    std_predictions_by_group_ele,
+    group_elements,
 ):
-    num_keys = len(true_values)
-    n = true_values["top"].shape[0]
+    groups = list(filter(lambda x: x not in ["bottom", "top"], true_values.keys()))
+    dicts_to_plot = []
+    for dict_array, dict_array_by_group_ele in zip(
+        (true_values, mean_predictions, std_predictions),
+        (
+            true_values_by_group_ele,
+            mean_predictions_by_group_ele,
+            std_predictions_by_group_ele,
+        ),
+    ):
+        dicts_to_plot.append(
+            {
+                "top": dict_array["top"],
+                groups[0]: dict_array[groups[0]],
+                group_elements["state"][0]: dict_array_by_group_ele[groups[0]][:, 0],
+                group_elements["state"][1]: dict_array_by_group_ele[groups[0]][:, 1],
+                groups[1]: dict_array[groups[1]],
+                group_elements["gender"][0]: dict_array_by_group_ele[groups[1]][:, 0],
+                group_elements["gender"][1]: dict_array_by_group_ele[groups[1]][:, 1],
+                "bottom-1": dict_array["bottom"][:, 0],
+                "bottom-2": dict_array["bottom"][:, 1],
+                "bottom-3": dict_array["bottom"][:, 2],
+                "bottom-4": dict_array["bottom"][:, 3],
+                "bottom-5": dict_array["bottom"][:, 4],
+            }
+        )
 
-    num_cols = 2
+    return dicts_to_plot[0], dicts_to_plot[1], dicts_to_plot[2]
+
+
+def plot_predictions_hierarchy(
+    true_values,
+    mean_predictions,
+    std_predictions,
+    true_values_by_group_ele,
+    mean_predictions_by_group_ele,
+    std_predictions_by_group_ele,
+    group_elements,
+    forecast_horizon,
+):
+    (
+        true_values_to_plot,
+        mean_predictions_to_plot,
+        std_predictions_to_plot,
+    ) = _build_dict_to_plot_hierarchy(
+        true_values,
+        mean_predictions,
+        std_predictions,
+        true_values_by_group_ele,
+        mean_predictions_by_group_ele,
+        std_predictions_by_group_ele,
+        group_elements,
+    )
+    num_keys = len(true_values_to_plot)
+    n = true_values_to_plot["top"].shape[0]
+
+    num_cols = 3
     num_rows = (num_keys + num_cols - 1) // num_cols
 
     fig, axs = plt.subplots(num_rows, num_cols, sharex=True, figsize=(14, 8))
@@ -26,16 +85,10 @@ def plot_predictions_hierarchy(
 
     axs = axs.ravel()
 
-    for i, group in enumerate(true_values):
-        true_vals = true_values[group]
-        mean_preds = mean_predictions[group]
-        std_preds = std_predictions[group]
-
-        # If the arrays are 2D, get the first column
-        if len(true_vals.shape) == 2:
-            true_vals = true_vals[:, 0]
-            mean_preds = mean_preds[:, 0]
-            std_preds = std_preds[:, 0]
+    for i, group in enumerate(true_values_to_plot):
+        true_vals = true_values_to_plot[group]
+        mean_preds = mean_predictions_to_plot[group]
+        std_preds = std_predictions_to_plot[group]
 
         mean_preds_fitted = mean_preds[: n - forecast_horizon]
         mean_preds_pred = mean_preds[-forecast_horizon:]
@@ -47,20 +100,24 @@ def plot_predictions_hierarchy(
         axs[i].plot(
             range(n - forecast_horizon), mean_preds_fitted, label="Mean fitted values"
         )
-        axs[i].plot(range(n - forecast_horizon, n), mean_preds_pred, label="Mean predictions")
+        axs[i].plot(
+            range(n - forecast_horizon, n), mean_preds_pred, label="Mean predictions"
+        )
 
         # Add the 95% interval to the plot
         axs[i].fill_between(
             range(n - forecast_horizon),
             mean_preds_fitted - 2 * std_preds_fitted,
             mean_preds_fitted + 2 * std_preds_fitted,
-            alpha=0.2, label="Fitting 95% CI"
+            alpha=0.2,
+            label="Fitting 95% CI",
         )
         axs[i].fill_between(
-            range(n-forecast_horizon, n),
+            range(n - forecast_horizon, n),
             mean_preds_pred - 2 * std_preds_pred,
             mean_preds_pred + 2 * std_preds_pred,
-            alpha=0.2, label='Forecast 95% CI'
+            alpha=0.2,
+            label="Forecast 95% CI",
         )
 
         axs[i].set_title(f"{group}")
