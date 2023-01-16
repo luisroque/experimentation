@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 import re
+from sktime.performance_metrics.forecasting import MeanAbsoluteScaledError
 
 
 class ResultsHandler:
@@ -31,12 +32,14 @@ class ResultsHandler:
         self.algo_path = ""
         self.preselected_algo_type = ""
         self.h = self.groups["h"]
+        self.seasonality = self.groups["seasonality"]
         self.n_train = self.groups["train"]["n"]
         self.n = self.groups["predict"]["n"]
         self.s = self.groups["train"]["s"]
         self.n_groups = self.groups["train"]["groups_n"]
         self.y_orig_fitpred = self.groups["predict"]["data_matrix"]
         self.y_orig_pred = self.groups["predict"]["data_matrix"][-self.h :, :]
+        self.mase = MeanAbsoluteScaledError(multioutput="raw_values")
 
     @staticmethod
     def _extract_version(filename):
@@ -260,6 +263,33 @@ class ResultsHandler:
             ),
             group_elements_names,
         )
+
+    def compute_mase(self, results_hierarchy, results_by_group_element, group_elements):
+        mase_by_group = {}
+        for group in results_hierarchy[0].keys():
+            y_true = results_hierarchy[0][group]
+            y_pred = results_hierarchy[1][group]
+            mase = self.mase(
+                y_true=y_true[-self.h :],
+                y_pred=y_pred[-self.h :],
+                y_train=y_true[: self.n - self.h],
+                sp=self.seasonality,
+            )
+            mase_by_group[group] = mase
+        for group, group_ele in group_elements.items():
+            mase_by_element = {}
+            for idx, element in enumerate(group_ele):
+                y_true = results_by_group_element[0][group][:, idx]
+                y_pred = results_by_group_element[1][group][:, idx]
+                mase = self.mase(
+                    y_true=y_true[-self.h :],
+                    y_pred=y_pred[-self.h :],
+                    y_train=y_true[: self.n - self.h],
+                    sp=self.seasonality,
+                )
+                mase_by_element[element] = mase
+            mase_by_group[group] = mase_by_element
+        return mase_by_group
 
     def data_to_boxplot(
         self,

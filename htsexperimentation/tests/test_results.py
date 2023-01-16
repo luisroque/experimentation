@@ -4,7 +4,11 @@ import pickle
 
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.config import RESULTS_PATH
-from htsexperimentation.visualization.plotting import boxplot, plot_predictions_hierarchy
+from htsexperimentation.visualization.plotting import (
+    boxplot,
+    plot_predictions_hierarchy,
+    plot_mase,
+)
 
 
 class TestModel(unittest.TestCase):
@@ -13,21 +17,21 @@ class TestModel(unittest.TestCase):
         data = {}
         for i in range(len(self.datasets)):
             with open(
-                    f"./data/data_{self.datasets[i]}.pickle",
-                    "rb",
+                f"./data/data_{self.datasets[i]}.pickle",
+                "rb",
             ) as handle:
                 data[i] = pickle.load(handle)
 
         self.results_prison_gpf = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[0],
-            algorithms=["gpf"],
+            algorithms=["gpf_exact", "deepar", "mint"],
             groups=data[0],
         )
         self.results_tourism_gpf = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[1],
-            algorithms=["gpf"],
+            algorithms=["gpf_exact"],
             groups=data[1],
         )
 
@@ -77,6 +81,34 @@ class TestModel(unittest.TestCase):
         )
         res = boxplot(datasets_err=dataset_res, err="mase")
 
+    def test_compute_mase(self):
+        (
+            results_hierarchy,
+            results_by_group_element,
+            group_elements,
+        ) = self.results_prison.compute_results_hierarchy(algorithm="gpf")
+        plot_predictions_hierarchy(
+            *results_hierarchy,
+            *results_by_group_element,
+            group_elements,
+            self.results_prison.h,
+        )
+        mase_by_group = self.results_prison.compute_mase(
+            results_hierarchy, results_by_group_element, group_elements
+        )
+        self.assertTrue(
+            list(mase_by_group.keys()) == ["bottom", "top", "state", "gender", "legal"]
+        )
+
     def test_create_plot_hierarchy(self):
-        results_hierarchy, results_by_group_element, group_elements = self.results_prison.compute_results_hierarchy(algorithm='gpf')
-        plot_predictions_hierarchy(*results_hierarchy, *results_by_group_element, group_elements, self.results_prison.h)
+        (
+            results_hierarchy,
+            results_by_group_element,
+            group_elements,
+        ) = self.results_prison.compute_results_hierarchy(algorithm="mint")
+        mase_by_group = self.results_prison.compute_mase(
+            results_hierarchy, results_by_group_element, group_elements
+        )
+        plot_mase(mase_by_group)
+
+

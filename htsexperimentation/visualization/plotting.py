@@ -1,6 +1,7 @@
 from typing import Dict
 import seaborn as sns
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from ..compute_results.compute_res_funcs import (
     agg_res_bottom_series,
@@ -31,11 +32,11 @@ def _build_dict_to_plot_hierarchy(
             {
                 "top": dict_array["top"],
                 groups[0]: dict_array[groups[0]],
-                group_elements["state"][0]: dict_array_by_group_ele[groups[0]][:, 0],
-                group_elements["state"][1]: dict_array_by_group_ele[groups[0]][:, 1],
+                f"{groups[0]}-{group_elements[groups[0]][0]}": dict_array_by_group_ele[groups[0]][:, 0],
+                f"{groups[0]}-{group_elements[groups[0]][1]}": dict_array_by_group_ele[groups[0]][:, 1],
                 groups[1]: dict_array[groups[1]],
-                group_elements["gender"][0]: dict_array_by_group_ele[groups[1]][:, 0],
-                group_elements["gender"][1]: dict_array_by_group_ele[groups[1]][:, 1],
+                f"{groups[1]}-{group_elements[groups[1]][0]}": dict_array_by_group_ele[groups[1]][:, 0],
+                f"{groups[1]}-{group_elements[groups[1]][1]}": dict_array_by_group_ele[groups[1]][:, 1],
                 "bottom-1": dict_array["bottom"][:, 0],
                 "bottom-2": dict_array["bottom"][:, 1],
                 "bottom-3": dict_array["bottom"][:, 2],
@@ -154,7 +155,7 @@ def plot_compare_err_metric(
     plt.show()
 
 
-def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
+def boxplot_error(df_res, datasets, figsize=(20, 10)):
     if len(datasets) == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
         fg = sns.boxplot(x="group", y="value", hue="algorithm", data=df_res[0], ax=ax)
@@ -175,6 +176,26 @@ def boxplot_error(df_res, err, datasets, figsize=(20, 10)):
             ax[i].set_title(datasets[i], fontsize=20)
         plt.legend()
         plt.show()
+
+
+def plot_mase(mase_by_group):
+    data = []
+    labels = []
+    for group, values in mase_by_group.items():
+        if type(values) is dict:
+            for sub_group, sub_values in values.items():
+                data.append(sub_values)
+                labels.append(group)
+        else:
+            data.append(values)
+            labels.append(group)
+    df = pd.DataFrame(columns=['Value', 'Group'])
+    for i, d in enumerate(data):
+        for value in d:
+            df = df.append({'Value': value, 'Group': labels[i]}, ignore_index=True)
+    sns.boxplot(x='Group', y='Value', data=df)
+    plt.title('MASE by group')
+    plt.show()
 
 
 def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (20, 10)):
