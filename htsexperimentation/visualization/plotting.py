@@ -226,7 +226,7 @@ def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (2
     else:
         _, ax = plt.subplots(
             n_datasets // 2 + n_datasets % 2,
-            n_datasets // 2 + n_datasets % 2,
+            max((n_datasets-1) // 2 + (n_datasets-1) % 2, 2),
             figsize=figsize,
         )
         ax = ax.ravel()

@@ -25,13 +25,13 @@ class TestModel(unittest.TestCase):
         self.results_prison_gpf = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[0],
-            algorithms=["gpf_exact", "deepar", "mint"],
+            algorithms=["gpf_exact", "gpf_svg"],
             groups=data[0],
         )
         self.results_tourism_gpf = ResultsHandler(
             path=RESULTS_PATH,
             dataset=self.datasets[1],
-            algorithms=["gpf_exact"],
+            algorithms=["gpf_exact", "gpf_svg"],
             groups=data[1],
         )
 
@@ -63,11 +63,14 @@ class TestModel(unittest.TestCase):
         res = boxplot(datasets_err=dataset_res, err="mase")
 
     def test_compute_diferences_gpf_variants(self):
-        res, algorithms = self.results_prison_gpf.load_results_algorithm(
-            algorithm="gpf"
+        results, algorithms = self.results_prison_gpf.load_all_results_algo_list(
+            algorithms_list=["gpf_exact", "gpf_svg"], res_type="fit_pred", res_measure="mean"
         )
         differences = self.results_prison_gpf.compute_differences(
-            base_algorithm="gpfexact", results=res, algorithms=algorithms, err="rmse"
+            base_algorithm="gpf_exact",
+            results=results,
+            algorithms=algorithms,
+            err="rmse",
         )
         res = boxplot(datasets_err=differences, err="rmse")
 
@@ -86,7 +89,7 @@ class TestModel(unittest.TestCase):
             results_hierarchy,
             results_by_group_element,
             group_elements,
-        ) = self.results_prison.compute_results_hierarchy(algorithm="gpf")
+        ) = self.results_prison.compute_results_hierarchy(algorithm="gpf_exact")
         plot_predictions_hierarchy(
             *results_hierarchy,
             *results_by_group_element,
@@ -110,5 +113,3 @@ class TestModel(unittest.TestCase):
             results_hierarchy, results_by_group_element, group_elements
         )
         plot_mase(mase_by_group)
-
-
