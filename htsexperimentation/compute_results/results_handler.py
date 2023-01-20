@@ -273,63 +273,60 @@ class ResultsHandler:
         std_group_by_ele = {}
         group_elements_names = {}
 
-        for results_algo_mean, results_algo_std, algo in zip(
-            results_algo_mean, results_algo_std, algorithm_w_type
-        ):
-            group_element_active = dict()
+        group_element_active = dict()
 
-            y_group["bottom"] = self.y_orig_fitpred
-            mean_group["bottom"] = results_algo_mean
-            std_group["bottom"] = results_algo_std
+        y_group["bottom"] = self.y_orig_fitpred
+        mean_group["bottom"] = results_algo_mean
+        std_group["bottom"] = results_algo_std
 
-            y_group["top"] = np.sum(self.y_orig_fitpred, axis=1)
-            mean_group["top"] = np.sum(results_algo_mean, axis=1)
-            std_group["top"] = np.sqrt(np.sum(results_algo_std**2, axis=1))
+        y_group["top"] = np.sum(self.y_orig_fitpred, axis=1)
+        mean_group["top"] = np.sum(results_algo_mean, axis=1)
+        std_group["top"] = np.sqrt(np.sum(results_algo_std**2, axis=1))
 
-            for group in list(self.groups["predict"]["groups_names"].keys()):
-                n_elements_group = self.groups["predict"]["groups_names"][group].shape[
-                    0
-                ]
-                group_elements = self.groups["predict"]["groups_names"][group]
-                groups_idx = self.groups["predict"]["groups_idx"][group]
+        for group in list(self.groups["predict"]["groups_names"].keys()):
+            n_elements_group = self.groups["predict"]["groups_names"][group].shape[
+                0
+            ]
+            group_elements = self.groups["predict"]["groups_names"][group]
+            groups_idx = self.groups["predict"]["groups_idx"][group]
 
-                y_group_element = np.zeros((self.n, n_elements_group))
-                mean_group_element = np.zeros((self.n, n_elements_group))
-                std_group_element = np.zeros((self.n, n_elements_group))
+            y_group_element = np.zeros((self.n, n_elements_group))
+            mean_group_element = np.zeros((self.n, n_elements_group))
+            std_group_element = np.zeros((self.n, n_elements_group))
 
-                elements_name = []
+            elements_name = []
 
-                for group_idx, element_name in enumerate(group_elements):
-                    group_element_active[element_name] = np.where(
-                        groups_idx == group_idx, 1, 0
-                    ).reshape((1, -1))
+            for group_idx, element_name in enumerate(group_elements):
+                group_element_active[element_name] = np.where(
+                    groups_idx == group_idx, 1, 0
+                ).reshape((1, -1))
 
-                    y_group_element[:, group_idx] = np.sum(
-                        group_element_active[element_name] * self.y_orig_fitpred,
+                y_group_element[:, group_idx] = np.sum(
+                    group_element_active[element_name] * self.y_orig_fitpred,
+                    axis=1,
+                )
+                mean_group_element[:, group_idx] = np.sum(
+                    group_element_active[element_name] * results_algo_mean,
+                    axis=1,
+                )
+                # The variance of the resulting distribution will be the sum
+                # of the variances of the original Gaussian distributions
+                std_group_element[:, group_idx] = np.sqrt(
+                    np.sum(
+                        group_element_active[element_name] * results_algo_std**2,
                         axis=1,
                     )
-                    mean_group_element[:, group_idx] = np.sum(
-                        group_element_active[element_name] * results_algo_mean,
-                        axis=1,
-                    )
-                    # The variance of the resulting distribution will be the sum
-                    # of the variances of the original Gaussian distributions
-                    std_group_element[:, group_idx] = np.sqrt(
-                        np.sum(
-                            group_element_active[element_name] * results_algo_std**2,
-                            axis=1,
-                        )
-                    )
+                )
 
-                    elements_name.append(element_name)
+                elements_name.append(element_name)
 
-                group_elements_names[group] = elements_name
-                y_group[group] = np.mean(y_group_element, axis=1)
-                y_group_by_ele[group] = y_group_element
-                mean_group[group] = np.mean(mean_group_element, axis=1)
-                mean_group_by_ele[group] = mean_group_element
-                std_group[group] = np.mean(std_group_element, axis=1)
-                std_group_by_ele[group] = std_group_element
+            group_elements_names[group] = elements_name
+            y_group[group] = np.mean(y_group_element, axis=1)
+            y_group_by_ele[group] = y_group_element
+            mean_group[group] = np.mean(mean_group_element, axis=1)
+            mean_group_by_ele[group] = mean_group_element
+            std_group[group] = np.mean(std_group_element, axis=1)
+            std_group_by_ele[group] = std_group_element
 
         return (
             (y_group, mean_group, std_group),
