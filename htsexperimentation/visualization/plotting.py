@@ -57,6 +57,7 @@ def plot_predictions_hierarchy(
     std_predictions_by_group_ele,
     group_elements,
     forecast_horizon,
+    algorithm
 ):
     (
         true_values_to_plot,
@@ -122,6 +123,7 @@ def plot_predictions_hierarchy(
         )
 
         axs[i].set_title(f"{group}")
+    plt.suptitle(f'Results for different groups for the {algorithm} algorithm', fontsize=16)
     plt.tight_layout()
     axs[i].legend()
     plt.show()

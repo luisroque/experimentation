@@ -95,6 +95,7 @@ class TestModel(unittest.TestCase):
             *results_by_group_element,
             group_elements,
             self.results_prison.h,
+            'gpf_exact'
         )
         mase_by_group = self.results_prison.compute_mase(
             results_hierarchy, results_by_group_element, group_elements
