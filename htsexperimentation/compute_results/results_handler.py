@@ -132,32 +132,33 @@ class ResultsHandler:
         """
         algorithm_w_type = ""
         result = dict()
-        if output_type == "metrics":
-            for file in [
-                path
-                for path in os.listdir(
-                    f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-                )
-                if self.dataset in path
-                and "orig" in path
-                and self.algorithms_metadata[algorithm]["version"] in path
-                and output_type in path
-            ]:
-                result, algorithm_w_type = self._load_procedure(file, algorithm)
-        else:
-            for file in [
-                path
-                for path in os.listdir(
-                    f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-                )
-                if self.dataset in path
-                and "orig" in path
-                and self.algorithms_metadata[algorithm]["version"] in path
-                and res_type in path
-                and res_measure in path
-                and output_type in path
-            ]:
-                result, algorithm_w_type = self._load_procedure(file, algorithm)
+        if algorithm in self.algorithms_metadata.keys():
+            if output_type == "metrics":
+                for file in [
+                    path
+                    for path in os.listdir(
+                        f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
+                    )
+                    if self.dataset in path
+                    and "orig" in path
+                    and self.algorithms_metadata[algorithm]["version"] in path
+                    and output_type in path
+                ]:
+                    result, algorithm_w_type = self._load_procedure(file, algorithm)
+            else:
+                for file in [
+                    path
+                    for path in os.listdir(
+                        f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
+                    )
+                    if self.dataset in path
+                    and "orig" in path
+                    and self.algorithms_metadata[algorithm]["version"] in path
+                    and res_type in path
+                    and res_measure in path
+                    and output_type in path
+                ]:
+                    result, algorithm_w_type = self._load_procedure(file, algorithm)
 
         return result, algorithm_w_type
 
@@ -274,59 +275,59 @@ class ResultsHandler:
         group_elements_names = {}
 
         group_element_active = dict()
+        if algorithm_w_type:
+            y_group["bottom"] = self.y_orig_fitpred
+            mean_group["bottom"] = results_algo_mean
+            std_group["bottom"] = results_algo_std
 
-        y_group["bottom"] = self.y_orig_fitpred
-        mean_group["bottom"] = results_algo_mean
-        std_group["bottom"] = results_algo_std
+            y_group["top"] = np.sum(self.y_orig_fitpred, axis=1)
+            mean_group["top"] = np.sum(results_algo_mean, axis=1)
+            std_group["top"] = np.sqrt(np.sum(results_algo_std**2, axis=1))
 
-        y_group["top"] = np.sum(self.y_orig_fitpred, axis=1)
-        mean_group["top"] = np.sum(results_algo_mean, axis=1)
-        std_group["top"] = np.sqrt(np.sum(results_algo_std**2, axis=1))
+            for group in list(self.groups["predict"]["groups_names"].keys()):
+                n_elements_group = self.groups["predict"]["groups_names"][group].shape[
+                    0
+                ]
+                group_elements = self.groups["predict"]["groups_names"][group]
+                groups_idx = self.groups["predict"]["groups_idx"][group]
 
-        for group in list(self.groups["predict"]["groups_names"].keys()):
-            n_elements_group = self.groups["predict"]["groups_names"][group].shape[
-                0
-            ]
-            group_elements = self.groups["predict"]["groups_names"][group]
-            groups_idx = self.groups["predict"]["groups_idx"][group]
+                y_group_element = np.zeros((self.n, n_elements_group))
+                mean_group_element = np.zeros((self.n, n_elements_group))
+                std_group_element = np.zeros((self.n, n_elements_group))
 
-            y_group_element = np.zeros((self.n, n_elements_group))
-            mean_group_element = np.zeros((self.n, n_elements_group))
-            std_group_element = np.zeros((self.n, n_elements_group))
+                elements_name = []
 
-            elements_name = []
+                for group_idx, element_name in enumerate(group_elements):
+                    group_element_active[element_name] = np.where(
+                        groups_idx == group_idx, 1, 0
+                    ).reshape((1, -1))
 
-            for group_idx, element_name in enumerate(group_elements):
-                group_element_active[element_name] = np.where(
-                    groups_idx == group_idx, 1, 0
-                ).reshape((1, -1))
-
-                y_group_element[:, group_idx] = np.sum(
-                    group_element_active[element_name] * self.y_orig_fitpred,
-                    axis=1,
-                )
-                mean_group_element[:, group_idx] = np.sum(
-                    group_element_active[element_name] * results_algo_mean,
-                    axis=1,
-                )
-                # The variance of the resulting distribution will be the sum
-                # of the variances of the original Gaussian distributions
-                std_group_element[:, group_idx] = np.sqrt(
-                    np.sum(
-                        group_element_active[element_name] * results_algo_std**2,
+                    y_group_element[:, group_idx] = np.sum(
+                        group_element_active[element_name] * self.y_orig_fitpred,
                         axis=1,
                     )
-                )
+                    mean_group_element[:, group_idx] = np.sum(
+                        group_element_active[element_name] * results_algo_mean,
+                        axis=1,
+                    )
+                    # The variance of the resulting distribution will be the sum
+                    # of the variances of the original Gaussian distributions
+                    std_group_element[:, group_idx] = np.sqrt(
+                        np.sum(
+                            group_element_active[element_name] * results_algo_std**2,
+                            axis=1,
+                        )
+                    )
 
-                elements_name.append(element_name)
+                    elements_name.append(element_name)
 
-            group_elements_names[group] = elements_name
-            y_group[group] = np.mean(y_group_element, axis=1)
-            y_group_by_ele[group] = y_group_element
-            mean_group[group] = np.mean(mean_group_element, axis=1)
-            mean_group_by_ele[group] = mean_group_element
-            std_group[group] = np.mean(std_group_element, axis=1)
-            std_group_by_ele[group] = std_group_element
+                group_elements_names[group] = elements_name
+                y_group[group] = np.mean(y_group_element, axis=1)
+                y_group_by_ele[group] = y_group_element
+                mean_group[group] = np.mean(mean_group_element, axis=1)
+                mean_group_by_ele[group] = mean_group_element
+                std_group[group] = np.mean(std_group_element, axis=1)
+                std_group_by_ele[group] = std_group_element
 
         return (
             (y_group, mean_group, std_group),
@@ -400,23 +401,24 @@ class ResultsHandler:
         self._validate_param(res_measure, ["mean", "std", ""])
         self._validate_param(output_type, ["results", "metrics", ""])
         for algorithm in self.algorithms:
-            results, algorithm_w_type = self.load_results_algorithm(
-                algorithm,
-                res_measure=res_measure,
-                res_type=res_type,
-                output_type=output_type,
-            )
-            if algorithm_w_type:
-                res_to_plot = self._handle_groups(results, err)
-                # Create a list of tuples, where each tuple is a group-value pair
-                data = [
-                    (group, value)
-                    for group in res_to_plot
-                    for value in res_to_plot[group]
-                ]
-                df_res_to_plot = pd.DataFrame(data, columns=["group", "value"])
-                df_res_to_plot = df_res_to_plot.assign(algorithm=algorithm_w_type)
-                dfs.append(df_res_to_plot)
+            if self.algorithms_metadata[algorithm]['version']:
+                results, algorithm_w_type = self.load_results_algorithm(
+                    algorithm,
+                    res_measure=res_measure,
+                    res_type=res_type,
+                    output_type=output_type,
+                )
+                if algorithm_w_type:
+                    res_to_plot = self._handle_groups(results, err)
+                    # Create a list of tuples, where each tuple is a group-value pair
+                    data = [
+                        (group, value)
+                        for group in res_to_plot
+                        for value in res_to_plot[group]
+                    ]
+                    df_res_to_plot = pd.DataFrame(data, columns=["group", "value"])
+                    df_res_to_plot = df_res_to_plot.assign(algorithm=algorithm_w_type)
+                    dfs.append(df_res_to_plot)
         if len(dfs) > 0:
             df_all_algos_boxplot = pd.concat(dfs)
         else:

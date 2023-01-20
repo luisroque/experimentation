@@ -216,8 +216,9 @@ def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (2
     datasets = []
     dfs = []
     for dataset, df in datasets_err.items():
-        datasets.append(dataset)
-        dfs.append(df)
+        if df is not None:
+            datasets.append(dataset)
+            dfs.append(df)
     n_datasets = len(datasets)
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
