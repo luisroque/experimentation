@@ -50,35 +50,24 @@ class TestModel(unittest.TestCase):
     def test_results_load(self):
         res = self.results_prison.load_results_algorithm(
             algorithm="ets_bu",
-            res_type="fit_pred",
+            res_type="fitpred",
             res_measure="mean",
             output_type="results",
         )
         self.assertTrue(res)
 
-    def test_create_df_boxplot(self):
-        res = self.results_prison.data_to_boxplot("mase")
-        self.assertTrue(isinstance(res, pd.DataFrame))
-
-    def test_create_boxplot_gpf_variants(self):
-        dataset_res = {}
-        dataset_res[self.datasets[0]] = self.results_prison_gpf.data_to_boxplot("mase")
-        dataset_res[self.datasets[1]] = self.results_tourism_gpf.data_to_boxplot("mase")
-        res = boxplot(datasets_err=dataset_res, err="mase")
-
-    def test_compute_diferences_gpf_variants(self):
-        results, algorithms = self.results_prison_gpf.load_all_results_algo_list(
-            algorithms_list=["gpf_exact", "gpf_svg"],
-            res_type="fit_pred",
-            res_measure="mean",
+    def test_compute_differences_gpf_variants(self):
+        results = self.results_prison_gpf.compute_error_metrics(
+            algorithms_list=["gpf_exact", "gpf_svg"], metric="rmse"
         )
-        differences = self.results_prison_gpf.compute_differences(
-            base_algorithm="gpf_exact",
-            results=results,
-            algorithms=algorithms,
-            err="rmse",
+        differences = self.results_prison_gpf.calculate_percent_diff(
+            base_algorithm="gpf_exact", results=results
         )
-        res = boxplot(datasets_err=differences, err="rmse")
+        differences_algorithms = {}
+        differences_algorithms["gpf_svg"] = self.results_prison_gpf.dict_to_df(
+            differences, "gpf_svg"
+        )
+        boxplot(datasets_err=differences_algorithms, err="rmse")
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}
@@ -103,8 +92,8 @@ class TestModel(unittest.TestCase):
             self.results_prison.h,
             "gpf_exact",
         )
-        mase_by_group = self.results_prison.compute_mase(
-            results_hierarchy, results_by_group_element, group_elements
+        mase_by_group = self.results_prison._compute_metric(
+            results_hierarchy, results_by_group_element, group_elements, "mase"
         )
         self.assertTrue(
             list(mase_by_group.keys()) == ["bottom", "top", "state", "gender", "legal"]

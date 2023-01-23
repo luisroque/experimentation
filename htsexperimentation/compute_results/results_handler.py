@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import re
 from sktime.performance_metrics.forecasting import MeanAbsoluteScaledError
+from sklearn.metrics import mean_squared_error
 
 
 class ResultsHandler:
@@ -94,25 +95,22 @@ class ResultsHandler:
         if param not in valid_values:
             raise ValueError(f"{param} is not a valid value")
 
-    def load_all_results_algo_list(
-        self, algorithms_list: List, res_type: str, res_measure: str
-    ) -> Tuple[List, List]:
-        results = []
-        algorithms = []
+    def compute_error_metrics(self, algorithms_list: List, metric: str = 'mase') -> Dict:
+        metric_algorithm = {}
         for algorithm in algorithms_list:
-            res, algorithm = self.load_results_algorithm(
-                algorithm=algorithm,
-                res_type=res_type,
-                res_measure=res_measure,
-                output_type="metrics",
+            (
+                results_hierarchy,
+                results_by_group_element,
+                group_elements,
+            ) = self.compute_results_hierarchy(algorithm=algorithm)
+
+            metric_algorithm[algorithm] = self._compute_metric(
+                results_hierarchy,
+                results_by_group_element,
+                group_elements,
+                metric=metric
             )
-            results.append(res)
-            algorithms.append(algorithm)
-
-        results = self._filter_list(results)
-        algorithms = self._filter_list(algorithms)
-
-        return results, algorithms
+        return metric_algorithm
 
     def load_results_algorithm(
         self, algorithm: str, res_type: str, res_measure: str, output_type: str
@@ -132,6 +130,13 @@ class ResultsHandler:
         """
         algorithm_w_type = ""
         result = dict()
+        # get the gp_type and concatenate with gpf_
+        match = re.search(r"gpf_(.*)", algorithm)
+        if match:
+            algo_type = match.group(1)
+        else:
+            algo_type = ""
+
         if algorithm in self.algorithms_metadata.keys():
             if output_type == "metrics":
                 for file in [
@@ -143,8 +148,11 @@ class ResultsHandler:
                     and "orig" in path
                     and self.algorithms_metadata[algorithm]["version"] in path
                     and output_type in path
+                    and algo_type in path
                 ]:
-                    result, algorithm_w_type = self._load_procedure(file, algorithm)
+                    result, algorithm_w_type = self._load_procedure(
+                        file, algorithm, algo_type
+                    )
             else:
                 for file in [
                     path
@@ -157,24 +165,20 @@ class ResultsHandler:
                     and res_type in path
                     and res_measure in path
                     and output_type in path
+                    and algo_type in path
                 ]:
-                    result, algorithm_w_type = self._load_procedure(file, algorithm)
+                    result, algorithm_w_type = self._load_procedure(
+                        file, algorithm, algo_type
+                    )
 
         return result, algorithm_w_type
 
-    def _load_procedure(self, file, algorithm):
-        # get the gp_type and concatenate with gpf_
-        match = re.search(r"gp_(.*)_cov", file)
-        if match:
-            algo_type = match.group(1)
-        else:
-            algo_type = ""
-
+    def _load_procedure(self, file, algorithm, algo_type):
         if (self.algorithms_metadata[algorithm]["preselected_algo_type"] != "") & (
             self.algorithms_metadata[algorithm]["preselected_algo_type"] == algo_type
         ):
             with open(
-                f"{self.path}/{self.algorithms_metadata[algorithm]['algo_path']}/{file}",
+                f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}/{file}",
                 "rb",
             ) as handle:
                 result = pickle.load(handle)
@@ -246,48 +250,54 @@ class ResultsHandler:
         """
         return list(filter(lambda x: x != "" and x != {}, data))
 
-    def compute_differences(
-        self, base_algorithm: str, results: List[Dict], algorithms: List, err: str
-    ) -> Dict:
-        base_results = results[algorithms.index(base_algorithm)]
-        differences = {}
-        differences_all_algos = []
-        for algorithm in algorithms:
+    def calculate_percent_diff(self, results, base_algorithm):
+        percent_diffs = {}
+        base_result = results[base_algorithm]
+        for algorithm in results.keys():
             if algorithm != base_algorithm:
-                curr_results = results[algorithms.index(algorithm)]
-                diff = {}
-                for metric in base_results:
-                    diff[metric] = {}
-                    for group in base_results[metric].keys():
-                        base_value = base_results[metric][group]
-                        curr_value = curr_results[metric][group]
-                        diff[metric][group] = (
-                            (curr_value - base_value) / base_value * 100
-                        )
-                diff_processed = self._handle_groups(diff, err)
-                df_res_to_plot = self._differences_to_df(diff_processed)
-                df_res_to_plot = df_res_to_plot.assign(algorithm=algorithm)
-                differences_all_algos.append(df_res_to_plot)
-        if not differences_all_algos:
-            raise ValueError("There are no metrics files from gpf variants")
-        df_all_algos_boxplot = pd.concat(differences_all_algos)
-        differences["Difference"] = df_all_algos_boxplot
-        return differences
+                percent_diffs[algorithm] = self.percentage_difference_recur(
+                    base_result, results[algorithm]
+                )
+        return percent_diffs
+
+    def percentage_difference_recur(self, dict1, dict2):
+        diff = {}
+        for key in dict1:
+            if key in dict2:
+                if type(dict1[key]) == dict:
+                    diff[key] = self.percentage_difference_recur(dict1[key], dict2[key])
+                else:
+                    diff[key] = abs(dict1[key] - dict2[key]) / (dict1[key])
+        return diff
 
     @staticmethod
-    def _differences_to_df(diff: Dict) -> pd.DataFrame:
-        rows = []
-        # Iterate over the keys of the data (the groups)
-        for group, values in diff.items():
-            # If the values are a scalar, store them as a single row in the DataFrame
-            if isinstance(values, (int, float)):
-                rows.append({"group": group, "value": values})
-            # If the values are an array, store each value as a separate row in the DataFrame
+    def dict_to_df(data, algorithm):
+        data = data[algorithm]
+        df = pd.DataFrame(columns=["group", "value", "algorithm", "group_element"])
+        for key, value in data.items():
+            if type(value) == dict:
+                for k, v in value.items():
+                    for i, val in enumerate(v):
+                        df = df.append(
+                            {
+                                "group": key,
+                                "value": val,
+                                "algorithm": algorithm,
+                                "group_element": k,
+                            },
+                            ignore_index=True,
+                        )
             else:
-                for value in values:
-                    rows.append({"group": group, "value": value})
-
-        df = pd.DataFrame(rows)
+                for i, val in enumerate(value):
+                    df = df.append(
+                        {
+                            "group": key,
+                            "value": val,
+                            "algorithm": algorithm,
+                            "group_element": "",
+                        },
+                        ignore_index=True,
+                    )
         return df
 
     def compute_results_hierarchy(
@@ -382,32 +392,47 @@ class ResultsHandler:
             group_elements_names,
         )
 
-    def compute_mase(self, results_hierarchy, results_by_group_element, group_elements):
-        mase_by_group = {}
+    def _compute_metric(self, results_hierarchy, results_by_group_element, group_elements, metric='mase'):
+        res = None
+        metric_by_group = {}
         for group in results_hierarchy[0].keys():
             y_true = results_hierarchy[0][group]
             y_pred = results_hierarchy[1][group]
-            mase = self.mase(
-                y_true=y_true[-self.h :],
-                y_pred=y_pred[-self.h :],
-                y_train=y_true[: self.n - self.h],
-                sp=self.seasonality,
-            )
-            mase_by_group[group] = mase
-        for group, group_ele in group_elements.items():
-            mase_by_element = {}
-            for idx, element in enumerate(group_ele):
-                y_true = results_by_group_element[0][group][:, idx]
-                y_pred = results_by_group_element[1][group][:, idx]
-                mase = self.mase(
+            if metric == 'mase':
+                res = self.mase(
                     y_true=y_true[-self.h :],
                     y_pred=y_pred[-self.h :],
                     y_train=y_true[: self.n - self.h],
                     sp=self.seasonality,
                 )
-                mase_by_element[element] = mase
-            mase_by_group[group] = mase_by_element
-        return mase_by_group
+            elif metric == 'rmse':
+                res = mean_squared_error(
+                    y_true=y_true[-self.h :],
+                    y_pred=y_pred[-self.h :],
+                    multioutput='raw_values'
+                )
+            metric_by_group[group] = res
+        for group, group_ele in group_elements.items():
+            metric_by_element = {}
+            for idx, element in enumerate(group_ele):
+                y_true = results_by_group_element[0][group][:, idx]
+                y_pred = results_by_group_element[1][group][:, idx]
+                if metric == 'mase':
+                    res = self.mase(
+                        y_true=y_true[-self.h:],
+                        y_pred=y_pred[-self.h:],
+                        y_train=y_true[: self.n - self.h],
+                        sp=self.seasonality,
+                    )
+                elif metric == 'rmse':
+                    res = mean_squared_error(
+                        y_true=y_true[-self.h:],
+                        y_pred=y_pred[-self.h:],
+                        multioutput='raw_values'
+                    )
+                metric_by_element[element] = res
+            metric_by_group[group] = metric_by_element
+        return metric_by_group
 
     def store_metrics(
         self,
