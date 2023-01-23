@@ -194,6 +194,49 @@ class ResultsHandler:
 
         return result, algorithm_w_type
 
+    def load_hyperparameters_logs(self, algorithm, path_to_logs="./logs/s"):
+        hyperparameters_dataset_algo = {}
+        for file_name in [
+            path
+            for path in os.listdir(f"{path_to_logs}")
+            if self.dataset in path
+            and self.algorithms_metadata[algorithm]["version"] in path
+            and self.algorithms_metadata[algorithm]["algo_path"] in path
+            and "hypertuning" in path
+        ]:
+            best_hyperparameters = {}
+            execution_date = ""
+            correct_log_structure = False
+            with open(f"{path_to_logs}{file_name}", "r") as f:
+                for line in f:
+                    if "Algorithm" in line:
+                        correct_log_structure = True
+                        algorithm = re.search(r"Algorithm: (.*?),", line).group(1)
+                        version = re.search(r"Version: (.*?),", line).group(1)
+                        dataset = re.search(r"Dataset: (.*?),", line).group(1)
+                        match = re.search(
+                            r"learning rate = (.*?), weight decay = (.*?), scheduler = (.*?), gamma = (.*?), inducing points percentage = (.*?), patience = (.*?)$",
+                            line,
+                        )
+                        best_hyperparameters = {
+                            "learning rate": match.group(1),
+                            "weight decay": match.group(2),
+                            "scheduler": match.group(3),
+                            "gamma": match.group(4),
+                            "inducing points percentage": match.group(5),
+                            "patience": match.group(6),
+                        }
+                        execution_date = re.search(r"^(.*?),", line).group(1)
+            if correct_log_structure:
+                hyperparameters_dataset_algo = {
+                    "algorithm": algorithm,
+                    "version": version,
+                    "dataset": dataset,
+                    "best_hyperparameters": best_hyperparameters,
+                    "execution_date": execution_date,
+                }
+        return hyperparameters_dataset_algo
+
     @staticmethod
     def _filter_list(data):
         """
@@ -401,7 +444,7 @@ class ResultsHandler:
         self._validate_param(res_measure, ["mean", "std", ""])
         self._validate_param(output_type, ["results", "metrics", ""])
         for algorithm in self.algorithms:
-            if self.algorithms_metadata[algorithm]['version']:
+            if self.algorithms_metadata[algorithm]["version"]:
                 results, algorithm_w_type = self.load_results_algorithm(
                     algorithm,
                     res_measure=res_measure,

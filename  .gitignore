@@ -54,12 +54,15 @@ audio/
 # data related
 original_datasets/
 transformed_datasets/
-data/
-results/
+**data/
+**results/
 
 # pip dist
 dist/
 build/
 *.egg-info/
+*.pickle
 
-**config**
+**logs/
+**plots/
+**.idea/

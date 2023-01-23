@@ -3,7 +3,6 @@ import pandas as pd
 import pickle
 
 from htsexperimentation.compute_results.results_handler import ResultsHandler
-from htsexperimentation.config import RESULTS_PATH
 from htsexperimentation.visualization.plotting import (
     boxplot,
     plot_predictions_hierarchy,
@@ -23,33 +22,38 @@ class TestModel(unittest.TestCase):
                 data[i] = pickle.load(handle)
 
         self.results_prison_gpf = ResultsHandler(
-            path=RESULTS_PATH,
+            path="./results/",
             dataset=self.datasets[0],
             algorithms=["gpf_exact", "gpf_svg"],
             groups=data[0],
         )
         self.results_tourism_gpf = ResultsHandler(
-            path=RESULTS_PATH,
+            path="./results/",
             dataset=self.datasets[1],
             algorithms=["gpf_exact", "gpf_svg"],
             groups=data[1],
         )
 
         self.results_prison = ResultsHandler(
-            path=RESULTS_PATH,
+            path="./results/",
             dataset=self.datasets[0],
             algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
             groups=data[0],
         )
         self.results_tourism = ResultsHandler(
-            path=RESULTS_PATH,
+            path="./results/",
             dataset=self.datasets[1],
             algorithms=["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"],
             groups=data[1],
         )
 
     def test_results_load(self):
-        res = self.results_prison.load_results_algorithm(algorithm="ets_bu")
+        res = self.results_prison.load_results_algorithm(
+            algorithm="ets_bu",
+            res_type="fit_pred",
+            res_measure="mean",
+            output_type="results",
+        )
         self.assertTrue(res)
 
     def test_create_df_boxplot(self):
@@ -64,7 +68,9 @@ class TestModel(unittest.TestCase):
 
     def test_compute_diferences_gpf_variants(self):
         results, algorithms = self.results_prison_gpf.load_all_results_algo_list(
-            algorithms_list=["gpf_exact", "gpf_svg"], res_type="fit_pred", res_measure="mean"
+            algorithms_list=["gpf_exact", "gpf_svg"],
+            res_type="fit_pred",
+            res_measure="mean",
         )
         differences = self.results_prison_gpf.compute_differences(
             base_algorithm="gpf_exact",
@@ -95,7 +101,7 @@ class TestModel(unittest.TestCase):
             *results_by_group_element,
             group_elements,
             self.results_prison.h,
-            'gpf_exact'
+            "gpf_exact",
         )
         mase_by_group = self.results_prison.compute_mase(
             results_hierarchy, results_by_group_element, group_elements

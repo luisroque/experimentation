@@ -3,13 +3,12 @@ import unittest
 from htsexperimentation.compute_results.results_handler_aggregator import (
     aggreate_results, aggreate_results_boxplot, aggregate_results_plot_hierarchy
 )
-from htsexperimentation.config import RESULTS_PATH
 
 
 class TestModel(unittest.TestCase):
     def setUp(self):
         self.datasets = ["prison", "tourism", "m5", "police"]
-        self.results_path = RESULTS_PATH
+        self.results_path = './results/'
         self.algorithms = ["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"]
         self.algorithms_gpf = ["gpf_exact", "gpf_svg"]
 
@@ -41,5 +40,7 @@ class TestModel(unittest.TestCase):
         )
         aggregate_results_plot_hierarchy(datasets=self.datasets, results=res, algorithm='deepar')
         aggregate_results_plot_hierarchy(datasets=self.datasets, results=res, algorithm='mint')
+        aggregate_results_plot_hierarchy(datasets=self.datasets, results=res, algorithm='gpf_exact')
         aggregate_results_plot_hierarchy(datasets=self.datasets, results=res_gpf, algorithm='gpf_exact')
+        aggregate_results_plot_hierarchy(datasets=self.datasets, results=res_gpf, algorithm='deepar')
 
