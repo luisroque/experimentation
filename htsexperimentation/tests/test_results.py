@@ -57,17 +57,11 @@ class TestModel(unittest.TestCase):
         self.assertTrue(res)
 
     def test_compute_differences_gpf_variants(self):
-        results = self.results_prison_gpf.compute_error_metrics(
-            algorithms_list=["gpf_exact", "gpf_svg"], metric="rmse"
-        )
+        results = self.results_prison_gpf.compute_error_metrics(metric="rmse")
         differences = self.results_prison_gpf.calculate_percent_diff(
             base_algorithm="gpf_exact", results=results
         )
-        differences_algorithms = {}
-        differences_algorithms["gpf_svg"] = self.results_prison_gpf.dict_to_df(
-            differences, "gpf_svg"
-        )
-        boxplot(datasets_err=differences_algorithms, err="rmse")
+        boxplot(datasets_err=differences, err="rmse")
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}

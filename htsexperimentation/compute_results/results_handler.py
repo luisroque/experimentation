@@ -95,9 +95,9 @@ class ResultsHandler:
         if param not in valid_values:
             raise ValueError(f"{param} is not a valid value")
 
-    def compute_error_metrics(self, algorithms_list: List, metric: str = 'mase') -> Dict:
+    def compute_error_metrics(self, metric: str = 'mase') -> Dict:
         metric_algorithm = {}
-        for algorithm in algorithms_list:
+        for algorithm in self.algorithms:
             (
                 results_hierarchy,
                 results_by_group_element,
@@ -258,7 +258,8 @@ class ResultsHandler:
                 percent_diffs[algorithm] = self.percentage_difference_recur(
                     base_result, results[algorithm]
                 )
-        return percent_diffs
+        percent_diffs_dfs = self._dict_to_df(percent_diffs, base_algorithm)
+        return percent_diffs_dfs
 
     def percentage_difference_recur(self, dict1, dict2):
         diff = {}
@@ -270,35 +271,38 @@ class ResultsHandler:
                     diff[key] = abs(dict1[key] - dict2[key]) / (dict1[key])
         return diff
 
-    @staticmethod
-    def dict_to_df(data, algorithm):
-        data = data[algorithm]
-        df = pd.DataFrame(columns=["group", "value", "algorithm", "group_element"])
-        for key, value in data.items():
-            if type(value) == dict:
-                for k, v in value.items():
-                    for i, val in enumerate(v):
-                        df = df.append(
-                            {
-                                "group": key,
-                                "value": val,
-                                "algorithm": algorithm,
-                                "group_element": k,
-                            },
-                            ignore_index=True,
-                        )
-            else:
-                for i, val in enumerate(value):
-                    df = df.append(
-                        {
-                            "group": key,
-                            "value": val,
-                            "algorithm": algorithm,
-                            "group_element": "",
-                        },
-                        ignore_index=True,
-                    )
-        return df
+    def _dict_to_df(self, data, base_algorithm):
+        dict_df_algo = {}
+        for algorithm in self.algorithms:
+            if algorithm != base_algorithm:
+                data = data[algorithm]
+                df = pd.DataFrame(columns=["group", "value", "algorithm", "group_element"])
+                for key, value in data.items():
+                    if type(value) == dict:
+                        for k, v in value.items():
+                            for i, val in enumerate(v):
+                                df = df.append(
+                                    {
+                                        "group": key,
+                                        "value": val,
+                                        "algorithm": algorithm,
+                                        "group_element": k,
+                                    },
+                                    ignore_index=True,
+                                )
+                    else:
+                        for i, val in enumerate(value):
+                            df = df.append(
+                                {
+                                    "group": key,
+                                    "value": val,
+                                    "algorithm": algorithm,
+                                    "group_element": "",
+                                },
+                                ignore_index=True,
+                            )
+                dict_df_algo[algorithm] = df
+        return dict_df_algo
 
     def compute_results_hierarchy(
         self,
