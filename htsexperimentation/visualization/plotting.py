@@ -205,11 +205,14 @@ def boxplot(
                 gp_types.append(gp_type)
                 if df is not None:
                     dfs.append(df)
+        else:
+            if value is not None:
+                dfs.append(value)
     n_datasets = len(datasets)
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
         fg = sns.boxplot(x="group", y="value", hue="algorithm", data=dfs[0], ax=ax)
-        if gp_type:
+        if gp_types:
             ax.set_title(f"{datasets[0]}_{gp_types[0]}_{err}", fontsize=20)
         else:
             ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
@@ -226,7 +229,7 @@ def boxplot(
             fg = sns.boxplot(
                 x="group", y="value", hue="algorithm", data=dfs[i], ax=ax[i]
             )
-            if gp_type:
+            if gp_types:
                 ax[i].set_title(f"{datasets[i]}_{gp_types[i]}_{err}", fontsize=20)
             else:
                 ax[i].set_title(f"{datasets[i]}_{err}", fontsize=20)

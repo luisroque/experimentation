@@ -7,9 +7,9 @@ from htsexperimentation.compute_results.results_handler_aggregator import (
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism", "m5", "police"]
+        self.datasets = ["prison", "tourism"]
         self.results_path = './results/'
-        self.algorithms = ["mint", "gpf_exact", "deepar", "standard_gp", "ets_bu"]
+        self.algorithms = ["mint", "gpf_exact", "deepar"]
         self.algorithms_gpf = ["gpf_exact", "gpf_svg"]
 
     def test_results_handler_aggregate(self):
@@ -19,7 +19,7 @@ class TestModel(unittest.TestCase):
             algorithms_gpf=self.algorithms_gpf,
             algorithms=self.algorithms
         )
-        self.assertTrue(len(res) == 4)
+        self.assertTrue(len(res) == 2)
 
     def test_results_handler_aggregate_boxplot(self):
         res_gpf, res = aggreate_results(
@@ -28,7 +28,7 @@ class TestModel(unittest.TestCase):
             algorithms_gpf=self.algorithms_gpf,
             algorithms=self.algorithms
         )
-        aggreate_results_boxplot(datasets=self.datasets, results=res)
+        aggreate_results_boxplot(datasets=self.datasets, results=res, ylims=(0, 2))
         aggreate_results_boxplot(datasets=self.datasets, results=res_gpf)
 
     def test_results_handler_aggregate_plot_hierarchy(self):

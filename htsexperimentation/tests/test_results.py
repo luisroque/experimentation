@@ -52,7 +52,6 @@ class TestModel(unittest.TestCase):
             algorithm="ets_bu",
             res_type="fitpred",
             res_measure="mean",
-            output_type="results",
         )
         self.assertTrue(res)
 
@@ -70,13 +69,16 @@ class TestModel(unittest.TestCase):
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}
-        dataset_res[self.datasets[0]] = self.results_prison.data_to_boxplot(
-            "mase", output_type="metrics"
-        )
-        dataset_res[self.datasets[1]] = self.results_tourism.data_to_boxplot(
-            "mase", output_type="metrics"
-        )
-        res = boxplot(datasets_err=dataset_res, err="mase")
+        res_prison = self.results_prison.compute_error_metrics(metric="mase")
+        res_tourism = self.results_tourism.compute_error_metrics(metric="mase")
+
+        res_obj_prison = self.results_prison.dict_to_df(res_prison, "")
+        dataset_res['prison'] = self.results_prison.concat_dfs(res_obj_prison)
+
+        res_obj_tourism = self.results_tourism.dict_to_df(res_tourism, "")
+        dataset_res['tourism'] = self.results_prison.concat_dfs(res_obj_tourism)
+
+        boxplot(datasets_err=dataset_res, err="mase")
 
     def test_compute_mase(self):
         (
@@ -104,7 +106,7 @@ class TestModel(unittest.TestCase):
             results_by_group_element,
             group_elements,
         ) = self.results_prison.compute_results_hierarchy(algorithm="mint")
-        mase_by_group = self.results_prison.compute_mase(
-            results_hierarchy, results_by_group_element, group_elements
+        mase_by_group = self.results_prison._compute_metric(
+            results_hierarchy, results_by_group_element, group_elements, "mase"
         )
         plot_mase(mase_by_group)

@@ -117,7 +117,7 @@ class ResultsHandler:
         return metric_algorithm
 
     def load_results_algorithm(
-        self, algorithm: str, res_type: str, res_measure: str, output_type: str
+        self, algorithm: str, res_type: str, res_measure: str
     ) -> Tuple[Dict, str]:
         """
         Load results for a given algorithm.
@@ -127,7 +127,6 @@ class ResultsHandler:
             res_type: defines the type of results, could be 'fit_pred' to receive fitted values plus
                 predictions or 'pred' to only store predictions
             res_measure: defines the measure to store, could be 'mean' or 'std'
-            output_type: defines the type of output - 'results' or 'metrics'
 
         Returns:
             A list of results for the given algorithm.
@@ -142,38 +141,22 @@ class ResultsHandler:
             algo_type = ""
 
         if algorithm in self.algorithms_metadata.keys():
-            if output_type == "metrics":
-                for file in [
-                    path
-                    for path in os.listdir(
-                        f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-                    )
-                    if self.dataset in path
-                    and "orig" in path
-                    and self.algorithms_metadata[algorithm]["version"] in path
-                    and output_type in path
-                    and algo_type in path
-                ]:
-                    result, algorithm_w_type = self._load_procedure(
-                        file, algorithm, algo_type
-                    )
-            else:
-                for file in [
-                    path
-                    for path in os.listdir(
-                        f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-                    )
-                    if self.dataset in path
-                    and "orig" in path
-                    and self.algorithms_metadata[algorithm]["version"] in path
-                    and res_type in path
-                    and res_measure in path
-                    and output_type in path
-                    and algo_type in path
-                ]:
-                    result, algorithm_w_type = self._load_procedure(
-                        file, algorithm, algo_type
-                    )
+            for file in [
+                path
+                for path in os.listdir(
+                    f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
+                )
+                if self.dataset in path
+                and "orig" in path
+                and self.algorithms_metadata[algorithm]["version"] in path
+                and res_type in path
+                and res_measure in path
+                and 'results' in path
+                and algo_type in path
+            ]:
+                result, algorithm_w_type = self._load_procedure(
+                    file, algorithm, algo_type
+                )
 
         return result, algorithm_w_type
 
@@ -262,7 +245,7 @@ class ResultsHandler:
                 percent_diffs[algorithm] = self.percentage_difference_recur(
                     base_result, results[algorithm]
                 )
-        percent_diffs_dfs = self._dict_to_df(percent_diffs, base_algorithm)
+        percent_diffs_dfs = self.dict_to_df(percent_diffs, base_algorithm)
         return percent_diffs_dfs
 
     def percentage_difference_recur(self, dict1, dict2):
@@ -275,15 +258,20 @@ class ResultsHandler:
                     diff[key] = abs(dict1[key] - dict2[key]) / (dict1[key])
         return diff
 
-    def _dict_to_df(self, data, base_algorithm):
+    @staticmethod
+    def concat_dfs(obj):
+        result = pd.concat([df.assign(algorithm=algorithm) for algorithm, df in obj.items()])
+        return result
+
+    def dict_to_df(self, data, base_algorithm):
         dict_df_algo = {}
         for algorithm in self.algorithms:
             if algorithm != base_algorithm:
-                data = data[algorithm]
+                data_algo = data[algorithm]
                 df = pd.DataFrame(
                     columns=["group", "value", "algorithm", "group_element"]
                 )
-                for key, value in data.items():
+                for key, value in data_algo.items():
                     if type(value) == dict:
                         for k, v in value.items():
                             for i, val in enumerate(v):
@@ -321,13 +309,11 @@ class ResultsHandler:
             algorithm,
             res_measure="mean",
             res_type=res_type,
-            output_type=output_type,
         )
         results_algo_std, algorithm_w_type = self.load_results_algorithm(
             algorithm,
             res_measure="std",
             res_type=res_type,
-            output_type=output_type,
         )
         y_group = {}
         mean_group = {}
@@ -459,58 +445,5 @@ class ResultsHandler:
         ) as handle:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
 
-    def data_to_boxplot(
-        self,
-        err: str,
-        res_measure: str = "",
-        res_type: str = "",
-        output_type: str = "metrics",
-    ) -> pd.DataFrame:
-        """
-        Convert data to a format suitable for creating a boxplot.
 
-        Args:
-            err: The error metric to use for the boxplot.
 
-        Returns:
-            A pandas DataFrame containing the data in a format suitable for creating a
-            boxplot.
-        """
-        dfs = []
-        self._validate_param(res_type, ["fitpred", "pred", ""])
-        self._validate_param(res_measure, ["mean", "std", ""])
-        self._validate_param(output_type, ["results", "metrics", ""])
-        for algorithm in self.algorithms:
-            if self.algorithms_metadata[algorithm]["version"]:
-                results, algorithm_w_type = self.load_results_algorithm(
-                    algorithm,
-                    res_measure=res_measure,
-                    res_type=res_type,
-                    output_type=output_type,
-                )
-                if algorithm_w_type:
-                    res_to_plot = self._handle_groups(results, err)
-                    # Create a list of tuples, where each tuple is a group-value pair
-                    data = [
-                        (group, value)
-                        for group in res_to_plot
-                        for value in res_to_plot[group]
-                    ]
-                    df_res_to_plot = pd.DataFrame(data, columns=["group", "value"])
-                    df_res_to_plot = df_res_to_plot.assign(algorithm=algorithm_w_type)
-                    dfs.append(df_res_to_plot)
-        if len(dfs) > 0:
-            df_all_algos_boxplot = pd.concat(dfs)
-        else:
-            df_all_algos_boxplot = None
-        return df_all_algos_boxplot
-
-    @staticmethod
-    def _handle_groups(result_err: Dict, err: str) -> Dict:
-        res_to_plot = {}
-        for group, res in result_err[err].items():
-            # get the individual results to later plot a distribution
-            if "ind" in group:
-                group_name = group.split("_")[0].lower()
-                res_to_plot[group_name] = res
-        return res_to_plot

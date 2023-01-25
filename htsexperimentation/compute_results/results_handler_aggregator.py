@@ -43,12 +43,14 @@ def aggreate_results(datasets, results_path, algorithms_gpf=None, algorithms=Non
     return results_gpf, results
 
 
-def aggreate_results_boxplot(datasets, results):
+def aggreate_results_boxplot(datasets, results, ylims=(0, 10)):
     dataset_res = {}
     for dataset in datasets:
-        dataset_res[dataset] = results[dataset].data_to_boxplot("mase")
+        res_prison = results[dataset].compute_error_metrics(metric="mase")
+        res_obj = results[dataset].dict_to_df(res_prison, "")
+        dataset_res[dataset] = results[dataset].concat_dfs(res_obj)
 
-    boxplot(datasets_err=dataset_res, err="mase")
+    boxplot(datasets_err=dataset_res, err="mase", ylim=ylims)
 
 
 def aggregate_results_plot_hierarchy(datasets, results, algorithm):
