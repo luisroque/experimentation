@@ -63,6 +63,10 @@ class ResultsHandler:
             self.algorithms_metadata[algorithm][
                 "version"
             ] = self._get_latest_version_algo(algorithm)
+            if not self.algorithms_metadata[algorithm]["version"]:
+                raise ValueError(
+                    f"Please make sure that you have result files for the {algorithm} algorithm"
+                )
 
     @staticmethod
     def _extract_version(filename):
@@ -95,7 +99,7 @@ class ResultsHandler:
         if param not in valid_values:
             raise ValueError(f"{param} is not a valid value")
 
-    def compute_error_metrics(self, metric: str = 'mase') -> Dict:
+    def compute_error_metrics(self, metric: str = "mase") -> Dict:
         metric_algorithm = {}
         for algorithm in self.algorithms:
             (
@@ -108,7 +112,7 @@ class ResultsHandler:
                 results_hierarchy,
                 results_by_group_element,
                 group_elements,
-                metric=metric
+                metric=metric,
             )
         return metric_algorithm
 
@@ -276,7 +280,9 @@ class ResultsHandler:
         for algorithm in self.algorithms:
             if algorithm != base_algorithm:
                 data = data[algorithm]
-                df = pd.DataFrame(columns=["group", "value", "algorithm", "group_element"])
+                df = pd.DataFrame(
+                    columns=["group", "value", "algorithm", "group_element"]
+                )
                 for key, value in data.items():
                     if type(value) == dict:
                         for k, v in value.items():
@@ -396,24 +402,26 @@ class ResultsHandler:
             group_elements_names,
         )
 
-    def _compute_metric(self, results_hierarchy, results_by_group_element, group_elements, metric='mase'):
+    def _compute_metric(
+        self, results_hierarchy, results_by_group_element, group_elements, metric="mase"
+    ):
         res = None
         metric_by_group = {}
         for group in results_hierarchy[0].keys():
             y_true = results_hierarchy[0][group]
             y_pred = results_hierarchy[1][group]
-            if metric == 'mase':
+            if metric == "mase":
                 res = self.mase(
                     y_true=y_true[-self.h :],
                     y_pred=y_pred[-self.h :],
                     y_train=y_true[: self.n - self.h],
                     sp=self.seasonality,
                 )
-            elif metric == 'rmse':
+            elif metric == "rmse":
                 res = mean_squared_error(
                     y_true=y_true[-self.h :],
                     y_pred=y_pred[-self.h :],
-                    multioutput='raw_values'
+                    multioutput="raw_values",
                 )
             metric_by_group[group] = res
         for group, group_ele in group_elements.items():
@@ -421,18 +429,18 @@ class ResultsHandler:
             for idx, element in enumerate(group_ele):
                 y_true = results_by_group_element[0][group][:, idx]
                 y_pred = results_by_group_element[1][group][:, idx]
-                if metric == 'mase':
+                if metric == "mase":
                     res = self.mase(
-                        y_true=y_true[-self.h:],
-                        y_pred=y_pred[-self.h:],
+                        y_true=y_true[-self.h :],
+                        y_pred=y_pred[-self.h :],
                         y_train=y_true[: self.n - self.h],
                         sp=self.seasonality,
                     )
-                elif metric == 'rmse':
+                elif metric == "rmse":
                     res = mean_squared_error(
-                        y_true=y_true[-self.h:],
-                        y_pred=y_pred[-self.h:],
-                        multioutput='raw_values'
+                        y_true=y_true[-self.h :],
+                        y_pred=y_pred[-self.h :],
+                        multioutput="raw_values",
                     )
                 metric_by_element[element] = res
             metric_by_group[group] = metric_by_element

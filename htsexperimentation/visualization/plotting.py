@@ -27,11 +27,19 @@ def _build_dict_to_plot_hierarchy(
             {
                 "top": dict_array["top"],
                 groups[0]: dict_array[groups[0]],
-                f"{groups[0]}-{group_elements[groups[0]][0]}": dict_array_by_group_ele[groups[0]][:, 0],
-                f"{groups[0]}-{group_elements[groups[0]][1]}": dict_array_by_group_ele[groups[0]][:, 1],
+                f"{groups[0]}-{group_elements[groups[0]][0]}": dict_array_by_group_ele[
+                    groups[0]
+                ][:, 0],
+                f"{groups[0]}-{group_elements[groups[0]][1]}": dict_array_by_group_ele[
+                    groups[0]
+                ][:, 1],
                 groups[1]: dict_array[groups[1]],
-                f"{groups[1]}-{group_elements[groups[1]][0]}": dict_array_by_group_ele[groups[1]][:, 0],
-                f"{groups[1]}-{group_elements[groups[1]][1]}": dict_array_by_group_ele[groups[1]][:, 1],
+                f"{groups[1]}-{group_elements[groups[1]][0]}": dict_array_by_group_ele[
+                    groups[1]
+                ][:, 0],
+                f"{groups[1]}-{group_elements[groups[1]][1]}": dict_array_by_group_ele[
+                    groups[1]
+                ][:, 1],
                 "bottom-1": dict_array["bottom"][:, 0],
                 "bottom-2": dict_array["bottom"][:, 1],
                 "bottom-3": dict_array["bottom"][:, 2],
@@ -52,7 +60,7 @@ def plot_predictions_hierarchy(
     std_predictions_by_group_ele,
     group_elements,
     forecast_horizon,
-    algorithm
+    algorithm,
 ):
     (
         true_values_to_plot,
@@ -118,7 +126,9 @@ def plot_predictions_hierarchy(
         )
 
         axs[i].set_title(f"{group}")
-    plt.suptitle(f'Results for different groups for the {algorithm} algorithm', fontsize=16)
+    plt.suptitle(
+        f"Results for different groups for the {algorithm} algorithm", fontsize=16
+    )
     plt.tight_layout()
     axs[i].legend()
     plt.show()
@@ -158,16 +168,21 @@ def plot_mase(mase_by_group):
         else:
             data.append(values)
             labels.append(group)
-    df = pd.DataFrame(columns=['Value', 'Group'])
+    df = pd.DataFrame(columns=["Value", "Group"])
     for i, d in enumerate(data):
         for value in d:
-            df = df.append({'Value': value, 'Group': labels[i]}, ignore_index=True)
-    sns.boxplot(x='Group', y='Value', data=df)
-    plt.title('MASE by group')
+            df = df.append({"Value": value, "Group": labels[i]}, ignore_index=True)
+    sns.boxplot(x="Group", y="Value", data=df)
+    plt.title("MASE by group")
     plt.show()
 
 
-def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (20, 10)):
+def boxplot(
+    datasets_err: Dict[str, pd.DataFrame],
+    err: str,
+    figsize: tuple = (20, 10),
+    ylim: tuple = (0, 10)
+):
     """
     Create a boxplot from the given data.
 
@@ -182,21 +197,28 @@ def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (2
     """
     datasets = []
     dfs = []
-    for dataset, df in datasets_err.items():
-        if df is not None:
-            datasets.append(dataset)
-            dfs.append(df)
+    gp_types = []
+    for dataset, value in datasets_err.items():
+        datasets.append(dataset)
+        if isinstance(value, dict):
+            for gp_type, df in value.items():
+                gp_types.append(gp_type)
+                if df is not None:
+                    dfs.append(df)
     n_datasets = len(datasets)
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
         fg = sns.boxplot(x="group", y="value", hue="algorithm", data=dfs[0], ax=ax)
-        ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
+        if gp_type:
+            ax.set_title(f"{datasets[0]}_{gp_types[0]}_{err}", fontsize=20)
+        else:
+            ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
         plt.legend()
         plt.show()
     else:
         _, ax = plt.subplots(
             n_datasets // 2 + n_datasets % 2,
-            max((n_datasets-1) // 2 + (n_datasets-1) % 2, 2),
+            max((n_datasets - 1) // 2 + (n_datasets - 1) % 2, 2),
             figsize=figsize,
         )
         ax = ax.ravel()
@@ -204,6 +226,10 @@ def boxplot(datasets_err: Dict[str, pd.DataFrame], err: str, figsize: tuple = (2
             fg = sns.boxplot(
                 x="group", y="value", hue="algorithm", data=dfs[i], ax=ax[i]
             )
-            ax[i].set_title(datasets[i], fontsize=20)
+            if gp_type:
+                ax[i].set_title(f"{datasets[i]}_{gp_types[i]}_{err}", fontsize=20)
+            else:
+                ax[i].set_title(f"{datasets[i]}_{err}", fontsize=20)
+            ax[i].set_ylim((ylim[0], ylim[1]))
         plt.legend()
         plt.show()
