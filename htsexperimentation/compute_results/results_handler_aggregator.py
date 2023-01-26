@@ -43,7 +43,7 @@ def aggreate_results(datasets, results_path, algorithms_gpf=None, algorithms=Non
     return results_gpf, results
 
 
-def aggreate_results_boxplot(datasets, results, ylims=(0, 10)):
+def aggreate_results_boxplot(datasets, results, ylims=None):
     dataset_res = {}
     for dataset in datasets:
         res_prison = results[dataset].compute_error_metrics(metric="mase")

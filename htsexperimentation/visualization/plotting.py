@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -181,7 +181,7 @@ def boxplot(
     datasets_err: Dict[str, pd.DataFrame],
     err: str,
     figsize: tuple = (20, 10),
-    ylim: tuple = (0, 10)
+    ylim: List = None,
 ):
     """
     Create a boxplot from the given data.
@@ -217,6 +217,8 @@ def boxplot(
         else:
             ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
         plt.legend()
+        if ylim:
+            plt.ylim((ylim[0][0], ylim[0][1]))
         plt.show()
     else:
         _, ax = plt.subplots(
@@ -233,6 +235,7 @@ def boxplot(
                 ax[i].set_title(f"{datasets[i]}_{gp_types[i]}_{err}", fontsize=20)
             else:
                 ax[i].set_title(f"{datasets[i]}_{err}", fontsize=20)
-            ax[i].set_ylim((ylim[0], ylim[1]))
+            if ylim:
+                ax[i].set_ylim((ylim[i][0], ylim[i][1]))
         plt.legend()
         plt.show()

@@ -28,7 +28,7 @@ class TestModel(unittest.TestCase):
             algorithms_gpf=self.algorithms_gpf,
             algorithms=self.algorithms
         )
-        aggreate_results_boxplot(datasets=self.datasets, results=res, ylims=(0, 2))
+        aggreate_results_boxplot(datasets=self.datasets, results=res, ylims=[[0, 10], [0, 2]])
         aggreate_results_boxplot(datasets=self.datasets, results=res_gpf)
 
     def test_results_handler_aggregate_plot_hierarchy(self):
