@@ -255,7 +255,7 @@ class ResultsHandler:
                 if type(dict1[key]) == dict:
                     diff[key] = self.percentage_difference_recur(dict1[key], dict2[key])
                 else:
-                    diff[key] = abs(dict1[key] - dict2[key]) / (dict1[key])
+                    diff[key] = (dict1[key] - dict2[key]) / (dict1[key])
         return diff
 
     @staticmethod
