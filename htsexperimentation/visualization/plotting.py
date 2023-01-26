@@ -198,13 +198,17 @@ def boxplot(
     datasets = []
     dfs = []
     gp_types = []
+    store_gp_types = True
     for dataset, value in datasets_err.items():
         datasets.append(dataset)
         if isinstance(value, dict):
             for gp_type, df in value.items():
-                gp_types.append(gp_type)
+                # store only the first gp_type
+                if store_gp_types:
+                    gp_types.append(gp_type)
                 if df is not None:
                     dfs.append(df)
+            store_gp_types = False
         else:
             if value is not None:
                 dfs.append(value)
@@ -227,15 +231,37 @@ def boxplot(
             figsize=figsize,
         )
         ax = ax.ravel()
-        for i in range(len(datasets)):
-            fg = sns.boxplot(
-                x="group", y="value", hue="algorithm", data=dfs[i], ax=ax[i]
-            )
+        num_gp_types_compare = len(gp_types)
+        for dataset_idx in range(len(datasets)):
+            df_to_concat = []
             if gp_types:
-                ax[i].set_title(f"{datasets[i]}_{gp_types[i]}_{err}", fontsize=20)
+                for gp_type_idx in range(num_gp_types_compare):
+                    gp_type_idx_dataset = (
+                        num_gp_types_compare * dataset_idx + gp_type_idx
+                    )
+                    ax[dataset_idx].set_title(
+                        f"{datasets[dataset_idx]}_{gp_types[gp_type_idx]}_{err}",
+                        fontsize=20,
+                    )
+                    df_to_concat.append(dfs[gp_type_idx_dataset])
+                df_to_plot = pd.concat(df_to_concat)
+                fg = sns.boxplot(
+                    x="group",
+                    y="value",
+                    hue="algorithm",
+                    data=df_to_plot,
+                    ax=ax[dataset_idx],
+                )
             else:
-                ax[i].set_title(f"{datasets[i]}_{err}", fontsize=20)
+                fg = sns.boxplot(
+                    x="group",
+                    y="value",
+                    hue="algorithm",
+                    data=dfs[dataset_idx],
+                    ax=ax[dataset_idx],
+                )
+                ax[dataset_idx].set_title(f"{datasets[dataset_idx]}_{err}", fontsize=20)
             if ylim:
-                ax[i].set_ylim((ylim[i][0], ylim[i][1]))
+                ax[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
         plt.legend()
         plt.show()

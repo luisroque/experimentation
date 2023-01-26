@@ -24,13 +24,13 @@ class TestModel(unittest.TestCase):
         self.results_prison_gpf = ResultsHandler(
             path="./results/",
             dataset=self.datasets[0],
-            algorithms=["gpf_exact", "gpf_svg"],
+            algorithms=["gpf_exact", "gpf_svg", "gpf_sparse"],
             groups=data[0],
         )
         self.results_tourism_gpf = ResultsHandler(
             path="./results/",
             dataset=self.datasets[1],
-            algorithms=["gpf_exact", "gpf_svg"],
+            algorithms=["gpf_exact", "gpf_svg", "gpf_sparse"],
             groups=data[1],
         )
 
