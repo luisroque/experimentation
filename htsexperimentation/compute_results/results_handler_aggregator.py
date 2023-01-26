@@ -64,7 +64,7 @@ def aggreate_results_table(datasets, results):
     dataset_res = _aggreate_results_df(datasets, results)
     res_df = concat_dataset_dfs(dataset_res)
     res_df = res_df.groupby(['group', 'algorithm', 'dataset']).mean()['value'].reset_index()
-
+    res_df = res_df.sort_values(by=['dataset', 'algorithm', 'group'])
     return res_df
 
 
