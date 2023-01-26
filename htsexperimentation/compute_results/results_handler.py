@@ -248,14 +248,19 @@ class ResultsHandler:
         percent_diffs_dfs = self.dict_to_df(percent_diffs, base_algorithm)
         return percent_diffs_dfs
 
-    def percentage_difference_recur(self, dict1, dict2):
+    def percentage_difference_recur(self, base_dict, dict2):
+        """
+        Computes the percentage difference between a base_dict and dict2.
+        Since we are handling error metrics, a positive number means that the
+        dict2 has a higher error than base_dict
+        """
         diff = {}
-        for key in dict1:
+        for key in base_dict:
             if key in dict2:
-                if type(dict1[key]) == dict:
-                    diff[key] = self.percentage_difference_recur(dict1[key], dict2[key])
+                if type(base_dict[key]) == dict:
+                    diff[key] = self.percentage_difference_recur(base_dict[key], dict2[key])
                 else:
-                    diff[key] = (dict1[key] - dict2[key]) / (dict1[key])
+                    diff[key] = (dict2[key] - base_dict[key]) / (base_dict[key])
         return diff
 
     @staticmethod
