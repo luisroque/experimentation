@@ -1,4 +1,10 @@
 from collections import Iterable
+import pandas as pd
+
+
+def concat_dataset_dfs(obj):
+    result = pd.concat([df.assign(dataset=dataset) for dataset, df in obj.items()])
+    return result
 
 
 def flatten(lis):
