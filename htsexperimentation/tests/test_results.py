@@ -55,6 +55,14 @@ class TestModel(unittest.TestCase):
         )
         self.assertTrue(res)
 
+    def test_results_load_gpf_variant(self):
+        res = self.results_prison_gpf.load_results_algorithm(
+            algorithm="gpf_sparse",
+            res_type="fitpred",
+            res_measure="mean",
+        )
+        self.assertTrue(res)
+
     def test_compute_differences_gpf_variants_single_dataset(self):
         differences = {}
         results = self.results_prison_gpf.compute_error_metrics(metric="rmse")
@@ -73,7 +81,7 @@ class TestModel(unittest.TestCase):
         differences[self.results_tourism_gpf.dataset] = self.results_tourism_gpf.calculate_percent_diff(
             base_algorithm="gpf_exact", results=results
         )
-        boxplot(datasets_err=differences, err="rmse")
+        boxplot(datasets_err=differences, err="rmse", zeroline=True)
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}
