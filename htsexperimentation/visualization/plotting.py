@@ -213,12 +213,11 @@ def boxplot(
             if value is not None:
                 dfs.append(value)
     n_datasets = len(datasets)
+    num_gp_types_compare = len(gp_types)
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
-        fg = sns.boxplot(x="group", y="value", hue="algorithm", data=dfs[0], ax=ax)
+        fg = sns.boxplot(x="group", y="value", hue="algorithm", data=pd.concat(dfs), ax=ax)
         if gp_types:
-            ax.set_title(f"{datasets[0]}_{gp_types[0]}_{err}", fontsize=20)
-        else:
             ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
         plt.legend()
         if ylim:
@@ -231,7 +230,6 @@ def boxplot(
             figsize=figsize,
         )
         ax = ax.ravel()
-        num_gp_types_compare = len(gp_types)
         for dataset_idx in range(len(datasets)):
             df_to_concat = []
             if gp_types:

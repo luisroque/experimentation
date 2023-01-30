@@ -55,6 +55,14 @@ class TestModel(unittest.TestCase):
         )
         self.assertTrue(res)
 
+    def test_compute_differences_gpf_variants_single_dataset(self):
+        differences = {}
+        results = self.results_prison_gpf.compute_error_metrics(metric="rmse")
+        differences[self.results_prison_gpf.dataset] = self.results_prison_gpf.calculate_percent_diff(
+            base_algorithm="gpf_exact", results=results
+        )
+        boxplot(datasets_err=differences, err="rmse")
+
     def test_compute_differences_gpf_variants(self):
         differences = {}
         results = self.results_prison_gpf.compute_error_metrics(metric="rmse")
