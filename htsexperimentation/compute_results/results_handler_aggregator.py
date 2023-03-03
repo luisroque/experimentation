@@ -20,7 +20,7 @@ def _read_original_data(datasets):
     return data
 
 
-def aggreate_results(datasets, results_path, algorithms_gpf=None, algorithms=None):
+def aggreate_results(datasets, results_path, algorithms_gpf=None, algorithms=None, sampling_dataset=False):
     results_gpf = {}
     results = {}
     i = 0
@@ -33,12 +33,20 @@ def aggreate_results(datasets, results_path, algorithms_gpf=None, algorithms=Non
                 algorithms=algorithms_gpf,
                 groups=data[dataset],
             )
-        if algorithms:
+        elif algorithms and sampling_dataset:
             results[dataset] = ResultsHandler(
                 path=results_path,
                 dataset=dataset,
                 algorithms=algorithms,
                 groups=data[dataset],
+                sampling_dataset=sampling_dataset
+            )
+        elif algorithms:
+            results[dataset] = ResultsHandler(
+                path=results_path,
+                dataset=dataset,
+                algorithms=algorithms,
+                groups=data[dataset]
             )
         i += 1
 

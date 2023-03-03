@@ -16,6 +16,7 @@ class ResultsHandler:
         dataset: str,
         groups: Dict,
         path: str = "../results",
+        sampling_dataset=False,
     ):
         """
         Initialize a ResultsHandler instance.
@@ -54,6 +55,12 @@ class ResultsHandler:
                 self.algorithms_metadata[algorithm][
                     "algo_name_output_files"
                 ] = f"{self.algorithms_metadata[algorithm]['algo_path'][:-1]}_{self.algorithms_metadata[algorithm]['preselected_algo_type']}"
+                if sampling_dataset:
+                    self.path_to_output_files = "./results/gpf/sampling_dataset/"
+                else:
+                    self.path_to_output_files = (
+                        f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
+                    )
             else:
                 self.algorithms_metadata[algorithm]["algo_path"] = algorithm
                 self.algorithms_metadata[algorithm][
@@ -63,6 +70,7 @@ class ResultsHandler:
             self.algorithms_metadata[algorithm][
                 "version"
             ] = self._get_latest_version_algo(algorithm)
+
             if not self.algorithms_metadata[algorithm]["version"]:
                 raise ValueError(
                     f"Please make sure that you have result files for the {algorithm} algorithm"
@@ -80,9 +88,7 @@ class ResultsHandler:
         versions = []
         for file in [
             path
-            for path in os.listdir(
-                f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-            )
+            for path in os.listdir(self.path_to_output_files)
             if self.dataset in path
             and "orig" in path
             and self.algorithms_metadata[algorithm]["algo_name_output_files"] in path
@@ -137,22 +143,21 @@ class ResultsHandler:
         match = re.search(r"gpf_(.*)", algorithm)
         if match:
             algo_type = match.group(1)
+            algo_type_search = algo_type + "_"
         else:
             algo_type = ""
 
         if algorithm in self.algorithms_metadata.keys():
             for file in [
                 path
-                for path in os.listdir(
-                    f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
-                )
+                for path in os.listdir(self.path_to_output_files)
                 if self.dataset in path
                 and "orig" in path
                 and self.algorithms_metadata[algorithm]["version"] in path
                 and res_type in path
                 and res_measure in path
-                and 'results' in path
-                and algo_type in path
+                and "results" in path
+                and algo_type_search in path
             ]:
                 result, algorithm_w_type = self._load_procedure(
                     file, algorithm, algo_type
@@ -165,7 +170,7 @@ class ResultsHandler:
             self.algorithms_metadata[algorithm]["preselected_algo_type"] == algo_type
         ):
             with open(
-                f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}/{file}",
+                f"{self.path_to_output_files}/{file}",
                 "rb",
             ) as handle:
                 result = pickle.load(handle)
@@ -258,14 +263,18 @@ class ResultsHandler:
         for key in base_dict:
             if key in dict2:
                 if type(base_dict[key]) == dict:
-                    diff[key] = self.percentage_difference_recur(base_dict[key], dict2[key])
+                    diff[key] = self.percentage_difference_recur(
+                        base_dict[key], dict2[key]
+                    )
                 else:
                     diff[key] = (dict2[key] - base_dict[key]) / (base_dict[key])
         return diff
 
     @staticmethod
     def concat_dfs(obj):
-        result = pd.concat([df.assign(algorithm=algorithm) for algorithm, df in obj.items()])
+        result = pd.concat(
+            [df.assign(algorithm=algorithm) for algorithm, df in obj.items()]
+        )
         return result
 
     def dict_to_df(self, data, base_algorithm):
@@ -307,7 +316,6 @@ class ResultsHandler:
         self,
         algorithm: str,
         res_type: str = "pred",
-        output_type: str = "results",
     ) -> Tuple[Tuple[Dict, Dict, Dict], Tuple[Dict, Dict, Dict], Dict]:
         self._validate_param(res_type, ["fitpred", "pred"])
         results_algo_mean, algorithm_w_type = self.load_results_algorithm(
@@ -320,6 +328,10 @@ class ResultsHandler:
             res_measure="std",
             res_type=res_type,
         )
+        # overwite n if we subsample the dataset
+        n = results_algo_mean.shape[0]
+        y_orig_fitpred = self.y_orig_fitpred[-(n-self.n):]
+
         y_group = {}
         mean_group = {}
         std_group = {}
@@ -345,9 +357,9 @@ class ResultsHandler:
                 group_elements = self.groups["predict"]["groups_names"][group]
                 groups_idx = self.groups["predict"]["groups_idx"][group]
 
-                y_group_element = np.zeros((self.n, n_elements_group))
-                mean_group_element = np.zeros((self.n, n_elements_group))
-                std_group_element = np.zeros((self.n, n_elements_group))
+                y_group_element = np.zeros((n, n_elements_group))
+                mean_group_element = np.zeros((n, n_elements_group))
+                std_group_element = np.zeros((n, n_elements_group))
 
                 elements_name = []
 
@@ -357,7 +369,7 @@ class ResultsHandler:
                     ).reshape((1, -1))
 
                     y_group_element[:, group_idx] = np.sum(
-                        group_element_active[element_name] * self.y_orig_fitpred,
+                        group_element_active[element_name] * y_orig_fitpred,
                         axis=1,
                     )
                     mean_group_element[:, group_idx] = np.sum(
@@ -449,6 +461,3 @@ class ResultsHandler:
             "wb",
         ) as handle:
             pickle.dump(res, handle, pickle.HIGHEST_PROTOCOL)
-
-
-
