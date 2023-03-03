@@ -56,7 +56,7 @@ class ResultsHandler:
                     "algo_name_output_files"
                 ] = f"{self.algorithms_metadata[algorithm]['algo_path'][:-1]}_{self.algorithms_metadata[algorithm]['preselected_algo_type']}"
                 if sampling_dataset:
-                    self.path_to_output_files = "./results/gpf/sampling_dataset/"
+                    self.path_to_output_files = f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}/sampling_dataset"
                 else:
                     self.path_to_output_files = (
                         f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
@@ -330,7 +330,7 @@ class ResultsHandler:
         )
         # overwite n if we subsample the dataset
         n = results_algo_mean.shape[0]
-        y_orig_fitpred = self.y_orig_fitpred[-(n-self.n):]
+        y_orig_fitpred = self.y_orig_fitpred[-(n - self.n) :]
 
         y_group = {}
         mean_group = {}
