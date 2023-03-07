@@ -1,4 +1,4 @@
-__version__ = "0.1.30"
+__version__ = "0.1.31"
 
 from htsexperimentation import compute_results
 from htsexperimentation import visualization

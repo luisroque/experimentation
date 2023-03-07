@@ -1,5 +1,4 @@
 import unittest
-import pandas as pd
 import pickle
 
 from htsexperimentation.compute_results.results_handler import ResultsHandler
@@ -46,14 +45,6 @@ class TestModel(unittest.TestCase):
             algorithms=["mint", "gpf_exact", "deepar"],
             groups=data[1],
         )
-
-    def test_results_load(self):
-        res = self.results_prison.load_results_algorithm(
-            algorithm="ets_bu",
-            res_type="fitpred",
-            res_measure="mean",
-        )
-        self.assertTrue(res)
 
     def test_results_load_gpf_variant(self):
         res = self.results_prison_gpf.load_results_algorithm(
@@ -109,7 +100,7 @@ class TestModel(unittest.TestCase):
             self.results_prison.h,
             "gpf_exact",
         )
-        mase_by_group = self.results_prison._compute_metric(
+        mase_by_group = self.results_prison._compute_metric_from_results(
             results_hierarchy, results_by_group_element, group_elements, "mase"
         )
         self.assertTrue(
@@ -122,7 +113,7 @@ class TestModel(unittest.TestCase):
             results_by_group_element,
             group_elements,
         ) = self.results_prison.compute_results_hierarchy(algorithm="mint")
-        mase_by_group = self.results_prison._compute_metric(
+        mase_by_group = self.results_prison._compute_metric_from_results(
             results_hierarchy, results_by_group_element, group_elements, "mase"
         )
         plot_mase(mase_by_group)

@@ -4,7 +4,7 @@ import pickle
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.compute_results.results_handler_aggregator import (
     aggregate_hyperparameter,
-    aggreate_results,
+    aggregate_results,
 )
 
 
@@ -31,7 +31,7 @@ class TestModel(unittest.TestCase):
         self.assertTrue(res["version"] == "0.3.44")
 
     def test_agg_hypertuning_from_logs(self):
-        _, results_handler = aggreate_results(
+        _, results_handler = aggregate_results(
             self.datasets, results_path="./results/", algorithms=["gpf_exact"]
         )
         res = aggregate_hyperparameter(
@@ -39,4 +39,4 @@ class TestModel(unittest.TestCase):
             results_handler=results_handler,
             algorithm="gpf_exact",
         )
-        self.assertTrue(res[1]["dataset"] == "tourism")
+        self.assertTrue(res.shape == (2, 10))

@@ -3,8 +3,8 @@ import pickle
 
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.compute_results.results_handler_aggregator import (
-    aggreate_results,
-    aggreate_results_boxplot,
+    aggregate_results_boxplot,
+    aggregate_results,
 )
 from htsexperimentation.visualization.plotting import (
     boxplot,
@@ -60,18 +60,18 @@ class TestModel(unittest.TestCase):
         boxplot(datasets_err=differences, err="rmse", zeroline=True)
 
     def test_results_handler_aggregate(self):
-        _, res_sub = aggreate_results(
+        _, res_sub = aggregate_results(
             datasets=[self.datasets[0]],
             results_path=self.results_path,
             algorithms=self.algorithms,
             sampling_dataset=True,
         )
-        aggreate_results_boxplot(
+        aggregate_results_boxplot(
             datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
         )
 
     def test_perc_diff(self):
-        _, res_sub = aggreate_results(
+        _, res_sub = aggregate_results(
             datasets=[self.datasets[0]],
             results_path=self.results_path,
             algorithms=self.algorithms,
