@@ -27,6 +27,7 @@ def aggregate_results(
     algorithms_gpf: List[str] = None,
     algorithms: List[str] = None,
     sampling_dataset: bool = False,
+    use_version_to_search: bool = True,
 ) -> Tuple[Dict[str, ResultsHandler], Dict[str, ResultsHandler]]:
     """
     Aggregate results from multiple datasets using the specified algorithms.
@@ -52,6 +53,7 @@ def aggregate_results(
                 dataset=dataset,
                 algorithms=algorithms_gpf,
                 groups=data[dataset],
+                use_version_to_search=use_version_to_search,
             )
         if algorithms and sampling_dataset:
             results[dataset] = ResultsHandler(
@@ -60,6 +62,7 @@ def aggregate_results(
                 algorithms=algorithms,
                 groups=data[dataset],
                 sampling_dataset=sampling_dataset,
+                use_version_to_search=use_version_to_search,
             )
         elif algorithms:
             results[dataset] = ResultsHandler(
@@ -67,6 +70,7 @@ def aggregate_results(
                 dataset=dataset,
                 algorithms=algorithms,
                 groups=data[dataset],
+                use_version_to_search=use_version_to_search,
             )
         i += 1
 

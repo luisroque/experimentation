@@ -14,6 +14,8 @@ class TestModel(unittest.TestCase):
         self.results_path = "./results/"
         self.algorithms = ["mint", "gpf_exact", "deepar"]
         self.algorithms_gpf = ["gpf_exact", "gpf_svg"]
+        self.datasets_no_version = ["prison"]
+        self.algorithms_gpf_no_version = ["gpf_ngdpredloglike"]
 
     def test_results_handler_aggregate(self):
         res_gpf, res = aggregate_results(
@@ -21,6 +23,7 @@ class TestModel(unittest.TestCase):
             results_path=self.results_path,
             algorithms_gpf=self.algorithms_gpf,
             algorithms=self.algorithms,
+            use_version_to_search=True
         )
         self.assertTrue(len(res) == 2)
 
@@ -35,6 +38,19 @@ class TestModel(unittest.TestCase):
             datasets=self.datasets, results=res, ylims=[[0, 10], [0, 2]]
         )
         aggregate_results_boxplot(datasets=self.datasets, results=res_gpf)
+
+    def test_results_handler_aggregate_boxplot_no_version(self):
+        res_gpf, res = aggregate_results(
+            datasets=self.datasets_no_version,
+            results_path=self.results_path,
+            algorithms_gpf=self.algorithms_gpf_no_version,
+            algorithms=self.algorithms,
+            use_version_to_search=False
+        )
+        aggregate_results_boxplot(
+            datasets=self.datasets_no_version, results=res, ylims=[[0, 10], [0, 2]]
+        )
+        aggregate_results_boxplot(datasets=self.datasets_no_version, results=res_gpf)
 
     def test_results_handler_aggregate_plot_hierarchy(self):
         res_gpf, res = aggregate_results(
