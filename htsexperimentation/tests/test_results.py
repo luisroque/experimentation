@@ -45,10 +45,25 @@ class TestModel(unittest.TestCase):
             algorithms=["mint", "gpf_exact", "deepar"],
             groups=data[1],
         )
+        self.results_prison_no_version = ResultsHandler(
+            path="./results/",
+            dataset=self.datasets[0],
+            algorithms=["gpf_ngdpredloglike"],
+            groups=data[1],
+            use_version_to_search=False
+        )
 
     def test_results_load_gpf_variant(self):
         res = self.results_prison_gpf.load_results_algorithm(
             algorithm="gpf_sparse",
+            res_type="fitpred",
+            res_measure="mean",
+        )
+        self.assertTrue(res)
+
+    def test_results_load_gpf_variant_no_version(self):
+        res = self.results_prison_no_version.load_results_algorithm(
+            algorithm="gpf_ngdpredloglike",
             res_type="fitpred",
             res_measure="mean",
         )

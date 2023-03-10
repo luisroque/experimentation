@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 
 import pandas as pd
 import numpy as np
@@ -17,6 +17,7 @@ class ResultsHandler:
         groups: Dict,
         path: str = "../results",
         sampling_dataset=False,
+        use_version_to_search=True,
     ):
         """
         Initialize a ResultsHandler instance.
@@ -30,6 +31,7 @@ class ResultsHandler:
         self.dataset = dataset
         self.path = path
         self.groups = groups
+        self.use_version_to_search = use_version_to_search
         self.h = self.groups["h"]
         self.seasonality = self.groups["seasonality"]
         self.n_train = self.groups["train"]["n"]
@@ -114,7 +116,10 @@ class ResultsHandler:
                 )
                 if self.dataset in path
                 and "orig" in path
-                and self.algorithms_metadata[algorithm]["version"] in path
+                and (
+                    not self.use_version_to_search
+                    or self.algorithms_metadata[algorithm]["version"] in path
+                )
                 and res_type in path
                 and res_measure in path
                 and "results" in path
