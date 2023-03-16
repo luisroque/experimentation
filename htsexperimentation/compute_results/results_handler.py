@@ -131,8 +131,8 @@ class ResultsHandler:
 
         if not np.any(result):
             raise ValueError(
-                f"Please make sure that you have result files for the {algorithm} algorithm "
-                f"and for the res_type {res_type}."
+                f"Please make sure that you have result files for the {algorithm} algorithm, "
+                f"{self.dataset} dataset and for the res_type {res_type}."
             )
         return result, algorithm_w_type
 
