@@ -78,7 +78,7 @@ class ResultsHandler:
 
             if not self.algorithms_metadata[algorithm]["version"]:
                 raise ValueError(
-                    f"Please make sure that you have result files for the {algorithm} algorithm"
+                    f"Please make sure that you have result files for the {algorithm} algorithm, {self.dataset} dataset"
                 )
 
     # -------- Load results and hyperparameters -------- #
