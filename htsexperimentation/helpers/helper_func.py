@@ -1,5 +1,15 @@
 from collections import Iterable
 import pandas as pd
+import re
+
+
+def extract_prefix(s):
+    pattern = r'^([a-zA-Z]+)'
+    match = re.match(pattern, s)
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
 def concat_dataset_dfs(obj):

@@ -23,7 +23,7 @@ class TestModel(unittest.TestCase):
                 data[i] = pickle.load(handle)
 
         self.results_path = "./results/"
-        self.algorithms = ["gpf_exact", "gpf_exact50", "gpf_exact75"]
+        self.algorithms = ["gpf_exact", "gpf_exact75", "gpf_exact90","mint", "mint75", "mint90"]
 
         self.results_prison_gpf = ResultsHandler(
             path=self.results_path,
@@ -40,14 +40,6 @@ class TestModel(unittest.TestCase):
             res_measure="mean",
         )
         self.assertTrue(res[0].shape == (48, 32))
-
-    def test_results_load_gpf_subsampled(self):
-        res = self.results_prison_gpf.load_results_algorithm(
-            algorithm="gpf_exact50",
-            res_type="fitpred",
-            res_measure="mean",
-        )
-        self.assertTrue(res[0].shape == (30, 32))
 
     def test_compute_differences_gpf_variants(self):
         differences = {}

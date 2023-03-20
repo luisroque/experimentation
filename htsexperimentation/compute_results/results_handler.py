@@ -7,6 +7,7 @@ import numpy as np
 import re
 from sktime.performance_metrics.forecasting import MeanAbsoluteScaledError
 from sklearn.metrics import mean_squared_error
+from htsexperimentation.helpers.helper_func import extract_prefix
 
 
 class ResultsHandler:
@@ -47,9 +48,9 @@ class ResultsHandler:
             if (algorithm.split("_")[0] == "gpf") & (len(algorithm) > len("gpf")):
                 # this allows the user to load a specific type
                 # of a gpf algorithm, e.g. exact, sparse
-                self.algorithms_metadata[algorithm]["algo_path"] = algorithm.split("_")[
-                    0
-                ]
+                self.algorithms_metadata[algorithm]["algo_path"] = extract_prefix(
+                    algorithm
+                )
                 self.algorithms_metadata[algorithm][
                     "preselected_algo_type"
                 ] = algorithm.split("_")[1]
@@ -57,20 +58,17 @@ class ResultsHandler:
                     "algo_name_output_files"
                 ] = f"{self.algorithms_metadata[algorithm]['algo_path'][:-1]}_{self.algorithms_metadata[algorithm]['preselected_algo_type']}"
             else:
-                self.algorithms_metadata[algorithm]["algo_path"] = algorithm
+                self.algorithms_metadata[algorithm]["algo_path"] = extract_prefix(
+                    algorithm
+                )
                 self.algorithms_metadata[algorithm][
                     "algo_name_output_files"
                 ] = algorithm
-                self.algorithms_metadata[algorithm]["preselected_algo_type"] = ""
+                self.algorithms_metadata[algorithm]["preselected_algo_type"] = algorithm
 
-            if sampling_dataset:
-                self.algorithms_metadata[algorithm][
-                    "path_to_output_files"
-                ] = f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}/sampling_dataset"
-            else:
-                self.algorithms_metadata[algorithm][
-                    "path_to_output_files"
-                ] = f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
+            self.algorithms_metadata[algorithm][
+                "path_to_output_files"
+            ] = f"{self.path}{self.algorithms_metadata[algorithm]['algo_path']}"
 
             self.algorithms_metadata[algorithm][
                 "version"
@@ -99,14 +97,9 @@ class ResultsHandler:
         """
         algorithm_w_type = ""
         result = dict()
-        # get the gp_type and concatenate with gpf_
-        match = re.search(r"gpf_(.*)", algorithm)
-        if match:
-            algo_type = match.group(1)
-            algo_type_search = algo_type + "_"
-        else:
-            algo_type = ""
-            algo_type_search = ""
+
+        algo_type = self.algorithms_metadata[algorithm]["preselected_algo_type"]
+        algo_type_search = self.algorithms_metadata[algorithm]["preselected_algo_type"] + "_"
 
         if algorithm in self.algorithms_metadata.keys():
             for file in [
