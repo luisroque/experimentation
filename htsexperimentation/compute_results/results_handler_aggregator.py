@@ -6,6 +6,7 @@ from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.visualization.plotting import (
     boxplot,
     lineplot,
+    barplot,
     plot_predictions_hierarchy,
 )
 from htsexperimentation.helpers.helper_func import concat_dataset_dfs
@@ -133,6 +134,24 @@ def aggregate_results_lineplot(
     dataset_res = _aggregate_results_df(datasets, results)
 
     lineplot(datasets_err=dataset_res, err="mase", ylim=ylims)
+
+
+def aggregate_results_barplot(
+    datasets: List[str],
+    results: Dict[str, ResultsHandler],
+    ylims: List[List[int]] = None,
+) -> None:
+    """
+    Aggregate results from multiple datasets and plot them in a boxplot.
+
+    Args:
+        datasets: A list of dataset names to be processed.
+        results: A dictionary of results for each dataset.
+        ylims: A tuple of the lower and upper y-axis limits for the plot.
+    """
+    dataset_res = _aggregate_results_df(datasets, results)
+
+    barplot(datasets_err=dataset_res, err="mase", ylim=ylims)
 
 
 def aggregate_results_table(

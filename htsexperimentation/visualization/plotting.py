@@ -303,7 +303,9 @@ def _extract_algorithms(data: pd.DataFrame) -> set:
         A set of unique algorithm names.
     """
     algorithms = set()
-    algorithms.update(data["algorithm"].apply(lambda x: re.match(r"([^\d]+)", x).group(1)))
+    algorithms.update(
+        data["algorithm"].apply(lambda x: re.match(r"([^\d]+)", x).group(1))
+    )
     return algorithms
 
 
@@ -324,15 +326,19 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
         if not algorithm_df.empty:
             x = algorithm_df["algorithm"].apply(
                 lambda x: int(re.match(r"([^\d]+)(\d+)", x).group(2))
-                if re.match(r"([^\d]+)(\d+)", x) else 100
+                if re.match(r"([^\d]+)(\d+)", x)
+                else 100
             )
-            y_mean = algorithm_df['value_mean']
-            y_std = algorithm_df['value_std']
-            extracted_data.append(pd.DataFrame({'x': x, 'y_mean': y_mean, 'y_std': y_std, 'algorithm': algorithm}))
+            y_mean = algorithm_df["value_mean"]
+            y_std = algorithm_df["value_std"]
+            extracted_data.append(
+                pd.DataFrame(
+                    {"x": x, "y_mean": y_mean, "y_std": y_std, "algorithm": algorithm}
+                )
+            )
     extracted_data = pd.concat(extracted_data)
-    extracted_data.sort_values('x', inplace=True)
+    extracted_data.sort_values("x", inplace=True)
     return extracted_data
-
 
 
 def _plot_lineplot(
@@ -360,13 +366,51 @@ def _plot_lineplot(
             algorithm_data["x"],
             algorithm_data["y_mean"] - algorithm_data["y_std"],
             algorithm_data["y_mean"] + algorithm_data["y_std"],
-            alpha=0.2,
+            alpha=0.02,
         )
     if zeroline:
         ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
     ax.set_xlabel("Percentage of Dataset Used")
     ax.set_ylabel(err)
     ax.legend()
+
+
+def _plot_barplot(
+    extracted_data: pd.DataFrame,
+    err: str,
+    ax: plt.Axes,
+):
+    hue_order = extracted_data["algorithm"].unique()
+    yerrs = {
+        alg: extracted_data.loc[extracted_data["algorithm"] == alg, "y_std"].values
+        for alg in hue_order
+    }
+
+    bar_plot = sns.barplot(
+        data=extracted_data,
+        x="x",
+        y="y_mean",
+        hue="algorithm",
+        ax=ax,
+        capsize=0.1,
+        hue_order=hue_order,
+        ci=None,
+        estimator=np.mean,
+    )
+
+    for i, (algorithm, bar_container) in enumerate(zip(hue_order, bar_plot.containers)):
+        current_yerrs = yerrs[algorithm]
+        for bar, yerr in zip(bar_container, current_yerrs):
+            bar_plot.errorbar(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                yerr=yerr,
+                fmt="none",
+                capsize=0.1,
+                color="black",
+                elinewidth=1,
+            )
+
 
 
 def lineplot(
@@ -404,6 +448,46 @@ def lineplot(
             ax = axs[i // n_cols, i % n_cols]
             ax.set_title(f"{dataset}_{err}", fontsize=20)
             _plot_lineplot(extracted_data, err, ax, zeroline)
+            if ylim:
+                ax.set_ylim((ylim[i][0], ylim[i][1]))
+
+    fig.tight_layout()
+    plt.show()
+
+
+def barplot(
+    datasets_err: Dict[str, pd.DataFrame],
+    err: str,
+    figsize: Tuple[int, int] = (20, 10),
+    ylim: List[Tuple[float, float]] = None,
+):
+    """
+    Create a barplot from the given data.
+
+    Args:
+        datasets_err: A dictionary mapping dataset names to pandas DataFrames containing
+            the data for each dataset in a format suitable for creating a barplot.
+        err: The error metric to use for the barplot.
+        figsize: The size of the figure to create.
+        ylim: A list of tuples containing the y-axis limits for each subplot.
+
+    Returns:
+        A matplotlib figure containing the barplot.
+    """
+    n_datasets = len(datasets_err)
+    n_cols = min(n_datasets, 2)
+    n_rows = math.ceil(n_datasets / n_cols)
+
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize)
+    axs = np.atleast_2d(axs)
+
+    for i, (dataset, data) in enumerate(datasets_err.items()):
+        if data is not None:
+            preprocessed_data = _getting_mean_err_per_algorithm(data)
+            extracted_data = _extract_x_y(preprocessed_data)
+            ax = axs[i // n_cols, i % n_cols]
+            ax.set_title(f"{dataset}_{err}", fontsize=20)
+            _plot_barplot(extracted_data, err, ax)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
 

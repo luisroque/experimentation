@@ -4,6 +4,7 @@ import pickle
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.compute_results.results_handler_aggregator import (
     aggregate_results_boxplot,
+    aggregate_results_barplot,
     aggregate_results_lineplot,
     aggregate_results,
 )
@@ -78,6 +79,17 @@ class TestModel(unittest.TestCase):
             sampling_dataset=True,
         )
         aggregate_results_lineplot(
+            datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
+        )
+
+    def test_results_handler_aggregate_barplot(self):
+        _, res_sub = aggregate_results(
+            datasets=[self.datasets[0]],
+            results_path=self.results_path,
+            algorithms=self.algorithms,
+            sampling_dataset=True,
+        )
+        aggregate_results_barplot(
             datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
         )
 
