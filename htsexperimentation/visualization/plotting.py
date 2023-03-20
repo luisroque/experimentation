@@ -276,7 +276,7 @@ def boxplot(
 
 def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
     """
-    Preprocess the data by grouping it by algorithm and calculating the mean.
+    Preprocess the data by grouping it by algorithm and calculating the mean and standard deviation.
 
     Args:
         data: The input data in a pandas DataFrame.
@@ -284,8 +284,11 @@ def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
     Returns:
         A pandas DataFrame containing the preprocessed data.
     """
-    df = data.groupby(["algorithm"]).mean()
-    df.reset_index(inplace=True)
+    df_mean = data.groupby(["algorithm"]).mean()
+    df_std = data.groupby(["algorithm"]).std()
+    df_mean.reset_index(inplace=True)
+    df_std.reset_index(inplace=True)
+    df = pd.merge(df_mean, df_std, on="algorithm", suffixes=("_mean", "_std"))
     return df
 
 
@@ -323,11 +326,13 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
                 lambda x: int(re.match(r"([^\d]+)(\d+)", x).group(2))
                 if re.match(r"([^\d]+)(\d+)", x) else 100
             )
-            y = algorithm_df['value']
-            extracted_data.append(pd.DataFrame({'x': x, 'y': y, 'algorithm': algorithm}))
+            y_mean = algorithm_df['value_mean']
+            y_std = algorithm_df['value_std']
+            extracted_data.append(pd.DataFrame({'x': x, 'y_mean': y_mean, 'y_std': y_std, 'algorithm': algorithm}))
     extracted_data = pd.concat(extracted_data)
     extracted_data.sort_values('x', inplace=True)
     return extracted_data
+
 
 
 def _plot_lineplot(
@@ -337,7 +342,7 @@ def _plot_lineplot(
     zeroline: bool = False,
 ):
     """
-    Plot a lineplot from the extracted data.
+    Plot a lineplot with standard deviation from the extracted data.
 
     Args:
         extracted_data: A pandas DataFrame containing the extracted x and y data for each algorithm.
@@ -348,7 +353,15 @@ def _plot_lineplot(
     Returns:
         None.
     """
-    sns.lineplot(data=extracted_data, x='x', y='y', hue='algorithm', ax=ax)
+    for algorithm in extracted_data["algorithm"].unique():
+        algorithm_data = extracted_data[extracted_data["algorithm"] == algorithm]
+        ax.plot(algorithm_data["x"], algorithm_data["y_mean"], label=algorithm)
+        ax.fill_between(
+            algorithm_data["x"],
+            algorithm_data["y_mean"] - algorithm_data["y_std"],
+            algorithm_data["y_mean"] + algorithm_data["y_std"],
+            alpha=0.2,
+        )
     if zeroline:
         ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
     ax.set_xlabel("Percentage of Dataset Used")
