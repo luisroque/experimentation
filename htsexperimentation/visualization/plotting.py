@@ -1,4 +1,8 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
+import re
+import math
+
+import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -240,7 +244,7 @@ def boxplot(
                 fontsize=20,
             )
             if zeroline:
-                ax[dataset_idx].axhline(y=0, linestyle='--', alpha=0.2, color='black')
+                ax[dataset_idx].axhline(y=0, linestyle="--", alpha=0.2, color="black")
             if gp_types:
                 for gp_type_idx in range(num_gp_types_compare):
                     gp_type_idx_dataset = (
@@ -268,3 +272,127 @@ def boxplot(
                 ax[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
         plt.legend()
         plt.show()
+
+
+def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Preprocess the data by grouping it by algorithm and calculating the mean.
+
+    Args:
+        data: The input data in a pandas DataFrame.
+
+    Returns:
+        A pandas DataFrame containing the preprocessed data.
+    """
+    df = data.groupby(["algorithm"]).mean()
+    df.reset_index(inplace=True)
+    return df
+
+
+def _extract_algorithms(data: pd.DataFrame) -> set:
+    """
+    Extract the set of unique algorithm names from the input data.
+
+    Args:
+        data: The input data in a pandas DataFrame.
+
+    Returns:
+        A set of unique algorithm names.
+    """
+    algorithms = set()
+    algorithms.update(data["algorithm"].apply(lambda x: re.match(r"([^\d]+)", x).group(1)))
+    return algorithms
+
+
+def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Extract the x and y data for each algorithm from the input data.
+
+    Args:
+        data: The input data in a pandas DataFrame.
+
+    Returns:
+        A pandas DataFrame containing the extracted x and y data for each algorithm.
+    """
+    extracted_data = []
+    algorithms = _extract_algorithms(data)
+    for algorithm in algorithms:
+        algorithm_df = data[data["algorithm"].str.startswith(algorithm)]
+        if not algorithm_df.empty:
+            x = algorithm_df["algorithm"].apply(
+                lambda x: int(re.match(r"([^\d]+)(\d+)", x).group(2))
+                if re.match(r"([^\d]+)(\d+)", x) else 100
+            )
+            y = algorithm_df['value']
+            extracted_data.append(pd.DataFrame({'x': x, 'y': y, 'algorithm': algorithm}))
+    extracted_data = pd.concat(extracted_data)
+    extracted_data.sort_values('x', inplace=True)
+    return extracted_data
+
+
+def _plot_lineplot(
+    extracted_data: pd.DataFrame,
+    err: str,
+    ax: plt.Axes,
+    zeroline: bool = False,
+):
+    """
+    Plot a lineplot from the extracted data.
+
+    Args:
+        extracted_data: A pandas DataFrame containing the extracted x and y data for each algorithm.
+        err: The error metric to use for the lineplot.
+        ax: The matplotlib axes object to use for the lineplot.
+        zeroline: A boolean indicating whether to draw a horizontal line at y=0.
+
+    Returns:
+        None.
+    """
+    sns.lineplot(data=extracted_data, x='x', y='y', hue='algorithm', ax=ax)
+    if zeroline:
+        ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
+    ax.set_xlabel("Percentage of Dataset Used")
+    ax.set_ylabel(err)
+    ax.legend()
+
+
+def lineplot(
+    datasets_err: Dict[str, pd.DataFrame],
+    err: str,
+    figsize: Tuple[int, int] = (20, 10),
+    ylim: List[Tuple[float, float]] = None,
+    zeroline: bool = False,
+):
+    """
+    Create a lineplot from the given data.
+
+    Args:
+        datasets_err: A dictionary mapping dataset names to pandas DataFrames containing
+            the data for each dataset in a format suitable for creating a lineplot.
+        err: The error metric to use for the lineplot.
+        figsize: The size of the figure to create.
+        ylim: A list of tuples containing the y-axis limits for each subplot.
+        zeroline: A boolean indicating whether to draw a horizontal line at y=0.
+
+    Returns:
+        A matplotlib figure containing the lineplot.
+    """
+    n_datasets = len(datasets_err)
+    n_cols = min(n_datasets, 2)
+    n_rows = math.ceil(n_datasets / n_cols)
+
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize)
+    axs = np.atleast_2d(axs)
+
+    for i, (dataset, data) in enumerate(datasets_err.items()):
+        if data is not None:
+            preprocessed_data = _getting_mean_err_per_algorithm(data)
+            extracted_data = _extract_x_y(preprocessed_data)
+            ax = axs[i // n_cols, i % n_cols]
+            ax.set_title(f"{dataset}_{err}", fontsize=20)
+            _plot_lineplot(extracted_data, err, ax, zeroline)
+            if ylim:
+                ax.set_ylim((ylim[i][0], ylim[i][1]))
+
+    fig.tight_layout()
+    plt.show()

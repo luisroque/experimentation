@@ -4,6 +4,7 @@ import pickle
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.compute_results.results_handler_aggregator import (
     aggregate_results_boxplot,
+    aggregate_results_lineplot,
     aggregate_results,
 )
 from htsexperimentation.visualization.plotting import (
@@ -23,7 +24,14 @@ class TestModel(unittest.TestCase):
                 data[i] = pickle.load(handle)
 
         self.results_path = "./results/"
-        self.algorithms = ["gpf_exact", "gpf_exact75", "gpf_exact90","mint", "mint75", "mint90"]
+        self.algorithms = [
+            "gpf_exact",
+            "gpf_exact75",
+            "gpf_exact90",
+            "mint",
+            "mint75",
+            "mint90",
+        ]
 
         self.results_prison_gpf = ResultsHandler(
             path=self.results_path,
@@ -59,6 +67,17 @@ class TestModel(unittest.TestCase):
             sampling_dataset=True,
         )
         aggregate_results_boxplot(
+            datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
+        )
+
+    def test_results_handler_aggregate_lineplot(self):
+        _, res_sub = aggregate_results(
+            datasets=[self.datasets[0]],
+            results_path=self.results_path,
+            algorithms=self.algorithms,
+            sampling_dataset=True,
+        )
+        aggregate_results_lineplot(
             datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
         )
 
