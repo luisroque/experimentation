@@ -29,6 +29,7 @@ class ResultsHandler:
             path: The path to the directory containing the results.
         """
         self.algorithms = algorithms
+        self.sampling_dataset = sampling_dataset
         self.dataset = dataset
         self.path = path
         self.groups = groups

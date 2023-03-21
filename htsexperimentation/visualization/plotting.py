@@ -359,19 +359,22 @@ def _plot_lineplot(
     Returns:
         None.
     """
+    # Compute and plot the relative difference
+    base_data = extracted_data[extracted_data["x"] == 100]
+
     for algorithm in extracted_data["algorithm"].unique():
+        base_mean = base_data[base_data["algorithm"] == algorithm]["y_mean"].values[0]
+        base_algorithm = base_data[base_data["algorithm"] == algorithm]["algorithm"].values[0]
         algorithm_data = extracted_data[extracted_data["algorithm"] == algorithm]
-        ax.plot(algorithm_data["x"], algorithm_data["y_mean"], label=algorithm)
-        ax.fill_between(
-            algorithm_data["x"],
-            algorithm_data["y_mean"] - algorithm_data["y_std"],
-            algorithm_data["y_mean"] + algorithm_data["y_std"],
-            alpha=0.02,
+        algorithm_diff = (algorithm_data["y_mean"] - base_mean) / base_mean
+        ax.plot(
+            algorithm_data["x"], algorithm_diff, label=f"{algorithm}"
         )
+
     if zeroline:
         ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
     ax.set_xlabel("Percentage of Dataset Used")
-    ax.set_ylabel(err)
+    ax.set_ylabel(f"Relative Difference of {err}")
     ax.legend()
 
 
@@ -410,7 +413,6 @@ def _plot_barplot(
                 color="black",
                 elinewidth=1,
             )
-
 
 
 def lineplot(

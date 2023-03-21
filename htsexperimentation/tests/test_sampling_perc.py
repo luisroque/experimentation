@@ -39,7 +39,6 @@ class TestModel(unittest.TestCase):
             dataset=self.datasets[0],
             algorithms=self.algorithms,
             groups=data[0],
-            sampling_dataset=True,
         )
 
     def test_results_load_gpf_exact_correctly(self):
