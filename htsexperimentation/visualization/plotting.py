@@ -345,7 +345,7 @@ def _plot_lineplot(
     extracted_data: pd.DataFrame,
     err: str,
     ax: plt.Axes,
-    zeroline: bool = False,
+    zeroline: bool = True,
 ):
     """
     Plot a lineplot with standard deviation from the extracted data.
@@ -391,8 +391,6 @@ def _plot_lineplot(
         )
         marker_index = (marker_index + 1) % len(markers)
 
-    if zeroline:
-        ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
     ax.set_xlabel("Percentage of Dataset Used", fontsize=16)
     ax.set_ylabel(f"Relative Difference of {err}", fontsize=16)
     ax.legend(fontsize=14)
@@ -446,19 +444,12 @@ def _plot_barplot(
             )
 
 
-import math
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import Dict, Tuple, List
-
-
 def lineplot(
     datasets_err: Dict[str, pd.DataFrame],
     err: str,
     figsize: Tuple[int, int] = (20, 10),
     ylim: List[Tuple[float, float]] = None,
-    zeroline: bool = False,
+    zeroline: bool = True,
 ):
     """
     Create a lineplot from the given data.
@@ -504,7 +495,7 @@ def lineplot(
             )
             ax.xaxis.label.set_size(25)
             ax.yaxis.label.set_size(25)
-            ax.grid(True, linestyle="--", linewidth=0.5)
+            ax.axhline(y=0, linestyle="--", alpha=0.3, color="black")
 
     fig.tight_layout()
     plt.show()

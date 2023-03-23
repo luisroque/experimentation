@@ -79,7 +79,7 @@ class TestModel(unittest.TestCase):
             sampling_dataset=True,
         )
         aggregate_results_lineplot(
-            datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 4], [0, 2]]
+            datasets=[self.datasets[0]], results=res_sub, ylims=[[-0.5, 4], [0, 2]]
         )
 
     def test_aggregate_results_plot_hierarchy_mint(self):
