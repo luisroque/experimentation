@@ -186,10 +186,10 @@ def set_plot_style():
     Set the plot style to have a grey background and white grid lines.
     """
     # Set the background color to grey
-    plt.rcParams['axes.facecolor'] = '#F0F0F0'
+    plt.rcParams["axes.facecolor"] = "#F0F0F0"
 
     # Set the grid color to white
-    plt.rcParams['grid.color'] = 'white'
+    plt.rcParams["grid.color"] = "white"
 
 
 def remove_axis_lines(ax):
@@ -197,10 +197,10 @@ def remove_axis_lines(ax):
     Remove the top and right axis lines of a matplotlib axes object and set the
     remaining axis lines to a light grey color.
     """
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
     return ax
 
 
@@ -224,26 +224,16 @@ def plot_boxplot(dfs, ax, dataset_name, gp_types=None):
             df_to_concat.append(dfs[gp_type_idx])
         df_to_plot = pd.concat(df_to_concat)
         fg = sns.boxplot(
-            x="group",
-            y="value",
-            hue="algorithm",
-            data=df_to_plot,
-            ax=ax,
-            zorder=3
+            x="group", y="value", hue="algorithm", data=df_to_plot, ax=ax, zorder=3
         )
-        ax.set_xlabel('')
-        ax.set_ylabel('')
+        ax.set_xlabel("")
+        ax.set_ylabel("")
     else:
         fg = sns.boxplot(
-            x="group",
-            y="value",
-            hue="algorithm",
-            data=pd.concat(dfs),
-            ax=ax,
-            zorder=3
+            x="group", y="value", hue="algorithm", data=pd.concat(dfs), ax=ax, zorder=3
         )
-        ax.set_xlabel('')
-        ax.set_ylabel('')
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
 
 def boxplot(
@@ -286,6 +276,10 @@ def boxplot(
                 dfs.append(value)
 
     n_datasets = len(datasets)
+    if gp_types:
+        n_gp_types = len(gp_types)
+    else:
+        n_gp_types = 1
 
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
@@ -309,8 +303,12 @@ def boxplot(
             if ylim:
                 axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
                 axs[dataset_idx].axhline(y=0, linestyle="--", alpha=0.3, color="black")
-            dfs_for_dataset = dfs[dataset_idx:(dataset_idx + 1)]
-            plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types)
+            dfs_for_dataset = dfs[
+                dataset_idx * n_gp_types : (dataset_idx + 1) * n_gp_types
+            ]
+            plot_boxplot(
+                dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types
+            )
             axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
 
         fig.tight_layout()
@@ -323,9 +321,7 @@ def boxplot(
             rotation="vertical",
             fontsize=16,
         )
-        fig.text(
-            0.5, 0.02, "Groups", ha="center", va="center", fontsize=16
-        )
+        fig.text(0.5, 0.02, "Groups", ha="center", va="center", fontsize=16)
 
         fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
@@ -442,12 +438,12 @@ def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors:
             linewidth=2,
             marker=markers[marker_index],
             markersize=8,
-            color=colors[algorithm]
+            color=colors[algorithm],
         )
         marker_index = (marker_index + 1) % len(markers)
 
-        ax.set_facecolor('#EAEAF2')
-        ax.grid(color='white', linestyle='-', linewidth=0.5)
+        ax.set_facecolor("#EAEAF2")
+        ax.grid(color="white", linestyle="-", linewidth=0.5)
 
 
 def _plot_barplot(
@@ -518,9 +514,9 @@ def lineplot(
 
     for i, (dataset, data) in enumerate(datasets_err.items()):
         algo_colors = {
-            "gpf_exact": '#1f77b4',
+            "gpf_exact": "#1f77b4",
             "mint": "darkorange",
-            "deepar": '#2ca02c',
+            "deepar": "#2ca02c",
         }
         if data is not None:
             preprocessed_data = _getting_mean_err_per_algorithm(data)
