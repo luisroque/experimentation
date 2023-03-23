@@ -461,7 +461,7 @@ def lineplot(
             preprocessed_data = _getting_mean_err_per_algorithm(data)
             extracted_data = _extract_x_y(preprocessed_data)
             ax = axs[i // n_cols, i % n_cols]
-            ax.set_title(f"{dataset} - {err}", fontsize=30, fontweight="bold")
+            ax.set_title(f"{dataset}", fontsize=30, fontweight="bold")
             _plot_lineplot(extracted_data, err, ax)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
