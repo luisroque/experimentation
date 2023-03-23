@@ -455,7 +455,6 @@ def lineplot(
 
     fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize, sharex=True)
     axs = np.atleast_2d(axs)
-    fig.text(0.04, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
 
     for i, (dataset, data) in enumerate(datasets_err.items()):
         if data is not None:
@@ -485,6 +484,9 @@ def lineplot(
             ax.axhline(y=0, linestyle="--", alpha=0.3, color="black")
 
     fig.tight_layout()
+    fig.text(0.02, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
+    fig.subplots_adjust(left=0.05, wspace=0.15)
+
     plt.show()
 
 
