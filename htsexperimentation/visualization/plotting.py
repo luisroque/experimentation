@@ -204,7 +204,7 @@ def remove_axis_lines(ax):
     return ax
 
 
-def plot_boxplot(dfs, ax, dataset_name, err_metric, gp_types=None, zeroline=False):
+def plot_boxplot(dfs, ax, dataset_name, gp_types=None):
     """
     Create a boxplot for a single dataset.
 
@@ -216,10 +216,7 @@ def plot_boxplot(dfs, ax, dataset_name, err_metric, gp_types=None, zeroline=Fals
         gp_types: A list of the different types of GPs being compared.
         zeroline: A boolean indicating whether to draw a horizontal line at y=0.
     """
-    ax.set_title(f"{dataset_name}_{err_metric}", fontsize=20)
-
-    if zeroline:
-        ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
+    ax.set_title(f"{dataset_name}", fontsize=20)
 
     if gp_types:
         df_to_concat = []
@@ -232,7 +229,10 @@ def plot_boxplot(dfs, ax, dataset_name, err_metric, gp_types=None, zeroline=Fals
             hue="algorithm",
             data=df_to_plot,
             ax=ax,
+            zorder=3
         )
+        ax.set_xlabel('')
+        ax.set_ylabel('')
     else:
         fg = sns.boxplot(
             x="group",
@@ -240,7 +240,10 @@ def plot_boxplot(dfs, ax, dataset_name, err_metric, gp_types=None, zeroline=Fals
             hue="algorithm",
             data=pd.concat(dfs),
             ax=ax,
+            zorder=3
         )
+        ax.set_xlabel('')
+        ax.set_ylabel('')
 
 
 def boxplot(
@@ -248,7 +251,6 @@ def boxplot(
     err: str,
     figsize: tuple = (20, 10),
     ylim: List = None,
-    zeroline: bool = False,
 ):
     """
     Create a boxplot from the given data.
@@ -284,11 +286,10 @@ def boxplot(
                 dfs.append(value)
 
     n_datasets = len(datasets)
-    num_gp_types_compare = len(gp_types)
 
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
-        plot_boxplot(dfs, ax, datasets[0], err, gp_types, zeroline=zeroline)
+        plot_boxplot(dfs, ax, datasets[0], gp_types)
         remove_axis_lines(ax)
 
         if ylim:
@@ -297,7 +298,7 @@ def boxplot(
         plt.legend()
         plt.show()
     else:
-        _, axs = plt.subplots(
+        fig, axs = plt.subplots(
             n_datasets // 2 + n_datasets % 2,
             max((n_datasets - 1) // 2 + (n_datasets - 1) % 2, 2),
             figsize=figsize,
@@ -305,12 +306,28 @@ def boxplot(
         axs = axs.ravel()
 
         for dataset_idx in range(len(datasets)):
-            dfs_for_dataset = dfs[dataset_idx * num_gp_types_compare:(dataset_idx + 1) * num_gp_types_compare]
-            plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], err, gp_types, zeroline=zeroline)
-            remove_axis_lines(axs[dataset_idx])
-
             if ylim:
                 axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
+                axs[dataset_idx].axhline(y=0, linestyle="--", alpha=0.3, color="black")
+            dfs_for_dataset = dfs[dataset_idx:(dataset_idx + 1)]
+            plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types)
+            axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
+
+        fig.tight_layout()
+        fig.text(
+            0.02,
+            0.5,
+            f"Relative Difference of {err}",
+            ha="center",
+            va="center",
+            rotation="vertical",
+            fontsize=16,
+        )
+        fig.text(
+            0.5, 0.02, "Groups", ha="center", va="center", fontsize=16
+        )
+
+        fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
         plt.legend()
         plt.show()
