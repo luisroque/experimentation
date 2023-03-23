@@ -345,7 +345,6 @@ def _plot_lineplot(
     extracted_data: pd.DataFrame,
     err: str,
     ax: plt.Axes,
-    zeroline: bool = True,
 ):
     """
     Plot a lineplot with standard deviation from the extracted data.
@@ -390,21 +389,6 @@ def _plot_lineplot(
             markersize=8,
         )
         marker_index = (marker_index + 1) % len(markers)
-
-    ax.set_xlabel("Percentage of Dataset Used", fontsize=16)
-    ax.set_ylabel(f"Relative Difference of {err}", fontsize=16)
-    ax.legend(fontsize=14)
-    # Customize the appearance of the plot
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_color("#666666")
-    ax.spines["left"].set_color("#666666")
-    ax.tick_params(
-        axis="both", which="both", bottom=False, top=False, left=False, right=False
-    )
-    ax.xaxis.label.set_size(14)
-    ax.yaxis.label.set_size(14)
-    ax.grid(True, linestyle="--", linewidth=0.5)
 
 
 def _plot_barplot(
@@ -469,8 +453,9 @@ def lineplot(
     n_cols = min(n_datasets, 2)
     n_rows = math.ceil(n_datasets / n_cols)
 
-    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize)
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize, sharex=True)
     axs = np.atleast_2d(axs)
+    fig.text(0.04, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
 
     for i, (dataset, data) in enumerate(datasets_err.items()):
         if data is not None:
@@ -478,9 +463,12 @@ def lineplot(
             extracted_data = _extract_x_y(preprocessed_data)
             ax = axs[i // n_cols, i % n_cols]
             ax.set_title(f"{dataset} - {err}", fontsize=30, fontweight="bold")
-            _plot_lineplot(extracted_data, err, ax, zeroline)
+            _plot_lineplot(extracted_data, err, ax)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
+            ax.xaxis.label.set_size(25)
+            ax.set_xlabel("Percentage of Dataset Used", fontsize=16)
+            ax.legend(fontsize=14)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
             ax.spines["bottom"].set_color("#666666")
@@ -493,8 +481,7 @@ def lineplot(
                 left=False,
                 right=False,
             )
-            ax.xaxis.label.set_size(25)
-            ax.yaxis.label.set_size(25)
+            ax.grid(True, linestyle="--", linewidth=0.5)
             ax.axhline(y=0, linestyle="--", alpha=0.3, color="black")
 
     fig.tight_layout()
