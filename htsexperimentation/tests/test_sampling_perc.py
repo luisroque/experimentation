@@ -7,6 +7,7 @@ from htsexperimentation.compute_results.results_handler_aggregator import (
     aggregate_results_barplot,
     aggregate_results_lineplot,
     aggregate_results,
+    aggregate_results_plot_hierarchy,
 )
 from htsexperimentation.visualization.plotting import (
     boxplot,
@@ -78,7 +79,29 @@ class TestModel(unittest.TestCase):
             sampling_dataset=True,
         )
         aggregate_results_lineplot(
-            datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 10], [0, 2]]
+            datasets=[self.datasets[0]], results=res_sub, ylims=[[0, 4], [0, 2]]
+        )
+
+    def test_aggregate_results_plot_hierarchy_mint(self):
+        _, res_sub = aggregate_results(
+            datasets=[self.datasets[0]],
+            results_path=self.results_path,
+            algorithms=self.algorithms,
+            sampling_dataset=True,
+        )
+        aggregate_results_plot_hierarchy(
+            datasets=[self.datasets[0]], results=res_sub, algorithm="mint75"
+        )
+
+    def test_aggregate_results_plot_hierarchy_gpf(self):
+        _, res_sub = aggregate_results(
+            datasets=[self.datasets[0]],
+            results_path=self.results_path,
+            algorithms=self.algorithms,
+            sampling_dataset=True,
+        )
+        aggregate_results_plot_hierarchy(
+            datasets=[self.datasets[0]], results=res_sub, algorithm="gpf_exact75"
         )
 
     def test_results_handler_aggregate_barplot(self):

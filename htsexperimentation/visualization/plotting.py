@@ -361,21 +361,52 @@ def _plot_lineplot(
     """
     # Compute and plot the relative difference
     base_data = extracted_data[extracted_data["x"] == 100]
-
+    markers = [
+        "o",
+        "s",
+        "^",
+        "D",
+        "X",
+        "P",
+        "v",
+        "*",
+        "H",
+        "d",
+    ]  # A list of marker symbols
+    marker_index = 0
     for algorithm in extracted_data["algorithm"].unique():
         base_mean = base_data[base_data["algorithm"] == algorithm]["y_mean"].values[0]
-        base_algorithm = base_data[base_data["algorithm"] == algorithm]["algorithm"].values[0]
+        base_algorithm = base_data[base_data["algorithm"] == algorithm][
+            "algorithm"
+        ].values[0]
         algorithm_data = extracted_data[extracted_data["algorithm"] == algorithm]
         algorithm_diff = (algorithm_data["y_mean"] - base_mean) / base_mean
         ax.plot(
-            algorithm_data["x"], algorithm_diff, label=f"{algorithm}"
+            algorithm_data["x"],
+            algorithm_diff,
+            label=f"{algorithm}",
+            linewidth=2,
+            marker=markers[marker_index],
+            markersize=8,
         )
+        marker_index = (marker_index + 1) % len(markers)
 
     if zeroline:
         ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
-    ax.set_xlabel("Percentage of Dataset Used")
-    ax.set_ylabel(f"Relative Difference of {err}")
-    ax.legend()
+    ax.set_xlabel("Percentage of Dataset Used", fontsize=16)
+    ax.set_ylabel(f"Relative Difference of {err}", fontsize=16)
+    ax.legend(fontsize=14)
+    # Customize the appearance of the plot
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color("#666666")
+    ax.spines["left"].set_color("#666666")
+    ax.tick_params(
+        axis="both", which="both", bottom=False, top=False, left=False, right=False
+    )
+    ax.xaxis.label.set_size(14)
+    ax.yaxis.label.set_size(14)
+    ax.grid(True, linestyle="--", linewidth=0.5)
 
 
 def _plot_barplot(
@@ -415,6 +446,13 @@ def _plot_barplot(
             )
 
 
+import math
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import Dict, Tuple, List
+
+
 def lineplot(
     datasets_err: Dict[str, pd.DataFrame],
     err: str,
@@ -448,10 +486,25 @@ def lineplot(
             preprocessed_data = _getting_mean_err_per_algorithm(data)
             extracted_data = _extract_x_y(preprocessed_data)
             ax = axs[i // n_cols, i % n_cols]
-            ax.set_title(f"{dataset}_{err}", fontsize=20)
+            ax.set_title(f"{dataset} - {err}", fontsize=30, fontweight="bold")
             _plot_lineplot(extracted_data, err, ax, zeroline)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.spines["bottom"].set_color("#666666")
+            ax.spines["left"].set_color("#666666")
+            ax.tick_params(
+                axis="both",
+                which="both",
+                bottom=False,
+                top=False,
+                left=False,
+                right=False,
+            )
+            ax.xaxis.label.set_size(25)
+            ax.yaxis.label.set_size(25)
+            ax.grid(True, linestyle="--", linewidth=0.5)
 
     fig.tight_layout()
     plt.show()
