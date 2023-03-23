@@ -341,11 +341,7 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
     return extracted_data
 
 
-def _plot_lineplot(
-    extracted_data: pd.DataFrame,
-    err: str,
-    ax: plt.Axes,
-):
+def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors: List):
     """
     Plot a lineplot with standard deviation from the extracted data.
 
@@ -387,6 +383,7 @@ def _plot_lineplot(
             linewidth=2,
             marker=markers[marker_index],
             markersize=8,
+            color=colors[algorithm]
         )
         marker_index = (marker_index + 1) % len(markers)
 
@@ -457,12 +454,17 @@ def lineplot(
     axs = np.atleast_2d(axs)
 
     for i, (dataset, data) in enumerate(datasets_err.items()):
+        algo_colors = {
+            "gpf_exact": '#1f77b4',
+            "mint": "darkorange",
+            "deepar": '#2ca02c',
+        }
         if data is not None:
             preprocessed_data = _getting_mean_err_per_algorithm(data)
             extracted_data = _extract_x_y(preprocessed_data)
             ax = axs[i // n_cols, i % n_cols]
             ax.set_title(f"{dataset}", fontsize=30, fontweight="bold")
-            _plot_lineplot(extracted_data, err, ax)
+            _plot_lineplot(extracted_data, err, ax, algo_colors)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
             ax.xaxis.label.set_size(25)
@@ -483,8 +485,18 @@ def lineplot(
             ax.axhline(y=0, linestyle="--", alpha=0.3, color="black")
 
     fig.tight_layout()
-    fig.text(0.02, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
-    fig.text(0.5, 0.02, "Percentage of Dataset Used", ha="center", va="center", fontsize=16)
+    fig.text(
+        0.02,
+        0.5,
+        f"Relative Difference of {err}",
+        ha="center",
+        va="center",
+        rotation="vertical",
+        fontsize=16,
+    )
+    fig.text(
+        0.5, 0.02, "Percentage of Dataset Used", ha="center", va="center", fontsize=16
+    )
 
     fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
