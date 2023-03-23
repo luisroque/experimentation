@@ -181,6 +181,68 @@ def plot_mase(mase_by_group):
     plt.show()
 
 
+def set_plot_style():
+    """
+    Set the plot style to have a grey background and white grid lines.
+    """
+    # Set the background color to grey
+    plt.rcParams['axes.facecolor'] = '#F0F0F0'
+
+    # Set the grid color to white
+    plt.rcParams['grid.color'] = 'white'
+
+
+def remove_axis_lines(ax):
+    """
+    Remove the top and right axis lines of a matplotlib axes object and set the
+    remaining axis lines to a light grey color.
+    """
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    return ax
+
+
+def plot_boxplot(dfs, ax, dataset_name, err_metric, gp_types=None, zeroline=False):
+    """
+    Create a boxplot for a single dataset.
+
+    Args:
+        dfs: A list of pandas DataFrames containing the data for each algorithm.
+        ax: The matplotlib axes object to use for the boxplot.
+        dataset_name: The name of the dataset being plotted.
+        err_metric: The error metric to use for the boxplot.
+        gp_types: A list of the different types of GPs being compared.
+        zeroline: A boolean indicating whether to draw a horizontal line at y=0.
+    """
+    ax.set_title(f"{dataset_name}_{err_metric}", fontsize=20)
+
+    if zeroline:
+        ax.axhline(y=0, linestyle="--", alpha=0.2, color="black")
+
+    if gp_types:
+        df_to_concat = []
+        for gp_type_idx in range(len(gp_types)):
+            df_to_concat.append(dfs[gp_type_idx])
+        df_to_plot = pd.concat(df_to_concat)
+        fg = sns.boxplot(
+            x="group",
+            y="value",
+            hue="algorithm",
+            data=df_to_plot,
+            ax=ax,
+        )
+    else:
+        fg = sns.boxplot(
+            x="group",
+            y="value",
+            hue="algorithm",
+            data=pd.concat(dfs),
+            ax=ax,
+        )
+
+
 def boxplot(
     datasets_err: Dict[str, pd.DataFrame],
     err: str,
@@ -200,10 +262,13 @@ def boxplot(
     Returns:
         A matplotlib figure containing the boxplot.
     """
+    set_plot_style()
+
     datasets = []
     dfs = []
     gp_types = []
     store_gp_types = True
+
     for dataset, value in datasets_err.items():
         datasets.append(dataset)
         if isinstance(value, dict):
@@ -217,59 +282,36 @@ def boxplot(
         else:
             if value is not None:
                 dfs.append(value)
+
     n_datasets = len(datasets)
     num_gp_types_compare = len(gp_types)
+
     if n_datasets == 1:
         _, ax = plt.subplots(1, 1, figsize=figsize)
-        fg = sns.boxplot(
-            x="group", y="value", hue="algorithm", data=pd.concat(dfs), ax=ax
-        )
-        if gp_types:
-            ax.set_title(f"{datasets[0]}_{err}", fontsize=20)
-        plt.legend()
+        plot_boxplot(dfs, ax, datasets[0], err, gp_types, zeroline=zeroline)
+        remove_axis_lines(ax)
+
         if ylim:
-            plt.ylim((ylim[0][0], ylim[0][1]))
+            ax.set_ylim((ylim[0][0], ylim[0][1]))
+
+        plt.legend()
         plt.show()
     else:
-        _, ax = plt.subplots(
+        _, axs = plt.subplots(
             n_datasets // 2 + n_datasets % 2,
             max((n_datasets - 1) // 2 + (n_datasets - 1) % 2, 2),
             figsize=figsize,
         )
-        ax = ax.ravel()
-        for dataset_idx in range(len(datasets)):
-            df_to_concat = []
-            ax[dataset_idx].set_title(
-                f"{datasets[dataset_idx]}_{err}",
-                fontsize=20,
-            )
-            if zeroline:
-                ax[dataset_idx].axhline(y=0, linestyle="--", alpha=0.2, color="black")
-            if gp_types:
-                for gp_type_idx in range(num_gp_types_compare):
-                    gp_type_idx_dataset = (
-                        num_gp_types_compare * dataset_idx + gp_type_idx
-                    )
+        axs = axs.ravel()
 
-                    df_to_concat.append(dfs[gp_type_idx_dataset])
-                df_to_plot = pd.concat(df_to_concat)
-                fg = sns.boxplot(
-                    x="group",
-                    y="value",
-                    hue="algorithm",
-                    data=df_to_plot,
-                    ax=ax[dataset_idx],
-                )
-            else:
-                fg = sns.boxplot(
-                    x="group",
-                    y="value",
-                    hue="algorithm",
-                    data=dfs[dataset_idx],
-                    ax=ax[dataset_idx],
-                )
+        for dataset_idx in range(len(datasets)):
+            dfs_for_dataset = dfs[dataset_idx * num_gp_types_compare:(dataset_idx + 1) * num_gp_types_compare]
+            plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], err, gp_types, zeroline=zeroline)
+            remove_axis_lines(axs[dataset_idx])
+
             if ylim:
-                ax[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
+                axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
+
         plt.legend()
         plt.show()
 
@@ -433,7 +475,6 @@ def lineplot(
     err: str,
     figsize: Tuple[int, int] = (20, 10),
     ylim: List[Tuple[float, float]] = None,
-    zeroline: bool = True,
 ):
     """
     Create a lineplot from the given data.
@@ -456,6 +497,8 @@ def lineplot(
     fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize, sharex=True)
     axs = np.atleast_2d(axs)
 
+    set_plot_style()
+
     for i, (dataset, data) in enumerate(datasets_err.items()):
         algo_colors = {
             "gpf_exact": '#1f77b4',
@@ -472,10 +515,7 @@ def lineplot(
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
             ax.xaxis.label.set_size(25)
             ax.legend(fontsize=14)
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
+            ax = remove_axis_lines(ax)
             ax.tick_params(
                 axis="both",
                 which="both",
