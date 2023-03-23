@@ -472,10 +472,10 @@ def lineplot(
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
             ax.xaxis.label.set_size(25)
             ax.legend(fontsize=14)
-            ax.spines["top"].set_visible(False)
-            ax.spines["right"].set_visible(False)
-            ax.spines["bottom"].set_color("#666666")
-            ax.spines["left"].set_color("#666666")
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
             ax.tick_params(
                 axis="both",
                 which="both",
