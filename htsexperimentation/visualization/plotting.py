@@ -466,7 +466,6 @@ def lineplot(
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
             ax.xaxis.label.set_size(25)
-            ax.set_xlabel("Percentage of Dataset Used", fontsize=16)
             ax.legend(fontsize=14)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
@@ -485,7 +484,9 @@ def lineplot(
 
     fig.tight_layout()
     fig.text(0.02, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
-    fig.subplots_adjust(left=0.05, wspace=0.15)
+    fig.text(0.5, 0.02, "Percentage of Dataset Used", ha="center", va="center", fontsize=16)
+
+    fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
     plt.show()
 
