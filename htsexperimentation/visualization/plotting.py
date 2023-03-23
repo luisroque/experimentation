@@ -387,6 +387,9 @@ def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors:
         )
         marker_index = (marker_index + 1) % len(markers)
 
+        ax.set_facecolor('#EAEAF2')
+        ax.grid(color='white', linestyle='-', linewidth=0.5)
+
 
 def _plot_barplot(
     extracted_data: pd.DataFrame,
@@ -463,7 +466,7 @@ def lineplot(
             preprocessed_data = _getting_mean_err_per_algorithm(data)
             extracted_data = _extract_x_y(preprocessed_data)
             ax = axs[i // n_cols, i % n_cols]
-            ax.set_title(f"{dataset}", fontsize=30, fontweight="bold")
+            ax.set_title(f"{dataset}", fontsize=25)
             _plot_lineplot(extracted_data, err, ax, algo_colors)
             if ylim:
                 ax.set_ylim((ylim[i][0], ylim[i][1]))
