@@ -19,6 +19,7 @@ class ResultsHandler:
         path: str = "../results",
         sampling_dataset=False,
         use_version_to_search=True,
+        load_transformed=False,
     ):
         """
         Initialize a ResultsHandler instance.
@@ -33,6 +34,7 @@ class ResultsHandler:
         self.dataset = dataset
         self.path = path
         self.groups = groups
+        self.load_transformed = load_transformed
         self.use_version_to_search = use_version_to_search
         self.h = self.groups["h"]
         self.seasonality = self.groups["seasonality"]
@@ -92,6 +94,7 @@ class ResultsHandler:
             res_type: defines the type of results, could be 'fit_pred' to receive fitted values plus
                 predictions or 'pred' to only store predictions
             res_measure: defines the measure to store, could be 'mean' or 'std'
+            load_transformed: if True, load files that do not contain 'orig' in their name.
 
         Returns:
             A list of results for the given algorithm.
@@ -100,7 +103,9 @@ class ResultsHandler:
         result = dict()
 
         algo_type = self.algorithms_metadata[algorithm]["preselected_algo_type"]
-        algo_type_search = self.algorithms_metadata[algorithm]["preselected_algo_type"] + "_"
+        algo_type_search = (
+            self.algorithms_metadata[algorithm]["preselected_algo_type"] + "_"
+        )
 
         if algorithm in self.algorithms_metadata.keys():
             for file in [
@@ -109,7 +114,7 @@ class ResultsHandler:
                     self.algorithms_metadata[algorithm]["path_to_output_files"]
                 )
                 if self.dataset in path
-                and "orig" in path
+                and ("orig" not in path if self.load_transformed else "orig" in path)
                 and (
                     not self.use_version_to_search
                     or self.algorithms_metadata[algorithm]["version"] in path
@@ -267,10 +272,12 @@ class ResultsHandler:
                     sp=self.seasonality,
                 )
             elif metric == "rmse":
-                res = mean_squared_error(
-                    y_true=y_true[-self.h :],
-                    y_pred=y_pred[-self.h :],
-                    multioutput="raw_values",
+                res = np.sqrt(
+                    mean_squared_error(
+                        y_true=y_true[-self.h :],
+                        y_pred=y_pred[-self.h :],
+                        multioutput="raw_values",
+                    )
                 )
             metric_by_group[group] = res
         for group, group_ele in group_elements.items():
@@ -286,10 +293,12 @@ class ResultsHandler:
                         sp=self.seasonality,
                     )
                 elif metric == "rmse":
-                    res = mean_squared_error(
-                        y_true=y_true[-self.h :],
-                        y_pred=y_pred[-self.h :],
-                        multioutput="raw_values",
+                    res = np.sqrt(
+                        mean_squared_error(
+                            y_true=y_true[-self.h :],
+                            y_pred=y_pred[-self.h :],
+                            multioutput="raw_values",
+                        )
                     )
                 metric_by_element[element] = res
             metric_by_group[group] = metric_by_element
@@ -465,12 +474,12 @@ class ResultsHandler:
                 self.algorithms_metadata[algorithm]["path_to_output_files"]
             )
             if self.dataset in path
-            and "orig" in path
+            and ("orig" not in path if self.load_transformed else "orig" in path)
             and self.algorithms_metadata[algorithm]["algo_name_output_files"] in path
         ]:
             versions.append(self._extract_version(file))
         if len(versions) > 0:
-            versions.sort(reverse=True)
+            versions.sort(key=lambda s: list(map(int, s.split('.'))), reverse=True)
             return versions[0]
         else:
             return None
