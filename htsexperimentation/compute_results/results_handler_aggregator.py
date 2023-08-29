@@ -104,6 +104,7 @@ def aggregate_results_boxplot(
     datasets: List[str],
     results: Dict[str, ResultsHandler],
     ylims: List[List[int]] = None,
+    figsize: Tuple[int, int] = (20, 10),
     n_cols: int = 2,
 ) -> None:
     """
@@ -116,7 +117,13 @@ def aggregate_results_boxplot(
     """
     dataset_res = _aggregate_results_df(datasets, results)
 
-    boxplot(datasets_err=dataset_res, err="mase", ylim=ylims, num_cols=n_cols)
+    boxplot(
+        datasets_err=dataset_res,
+        err="mase",
+        ylim=ylims,
+        num_cols=n_cols,
+        figsize=figsize,
+    )
 
 
 def aggregate_results_lineplot(
