@@ -94,8 +94,8 @@ def _aggregate_results_df(
     """
     dataset_res = {}
     for dataset in datasets:
-        res_prison = results[dataset].compute_error_metrics(metric="mase")
-        res_obj = results[dataset].dict_to_df(res_prison, "")
+        res = results[dataset].compute_error_metrics(metric="mase")
+        res_obj = results[dataset].dict_to_df(res, "")
         dataset_res[dataset] = results[dataset].concat_dfs(res_obj)
     return dataset_res
 
@@ -177,7 +177,10 @@ def aggregate_results_table(
 
 
 def aggregate_results_plot_hierarchy(
-    datasets: List[str], results: Dict[str, ResultsHandler], algorithm: str
+    datasets: List[str],
+    results: Dict[str, ResultsHandler],
+    algorithm: str,
+    include_uncertainty: bool = True,
 ) -> None:
     """
     Aggregate results from multiple datasets and plot them in a hierarchical format.
@@ -201,6 +204,7 @@ def aggregate_results_plot_hierarchy(
                 group_elements,
                 results[dataset].h,
                 algorithm,
+                include_uncertainty=include_uncertainty,
             )
 
 

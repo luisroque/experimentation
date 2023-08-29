@@ -65,6 +65,7 @@ def plot_predictions_hierarchy(
     group_elements,
     forecast_horizon,
     algorithm,
+    include_uncertainty=True
 ):
     (
         true_values_to_plot,
@@ -113,21 +114,22 @@ def plot_predictions_hierarchy(
             range(n - forecast_horizon, n), mean_preds_pred, label="Mean predictions"
         )
 
-        # Add the 95% interval to the plot
-        axs[i].fill_between(
-            range(n - forecast_horizon),
-            mean_preds_fitted - 2 * std_preds_fitted,
-            mean_preds_fitted + 2 * std_preds_fitted,
-            alpha=0.2,
-            label="Fitting 95% CI",
-        )
-        axs[i].fill_between(
-            range(n - forecast_horizon, n),
-            mean_preds_pred - 2 * std_preds_pred,
-            mean_preds_pred + 2 * std_preds_pred,
-            alpha=0.2,
-            label="Forecast 95% CI",
-        )
+        if include_uncertainty:
+            # Add the 95% interval to the plot
+            axs[i].fill_between(
+                range(n - forecast_horizon),
+                mean_preds_fitted - 2 * std_preds_fitted,
+                mean_preds_fitted + 2 * std_preds_fitted,
+                alpha=0.2,
+                label="Fitting 95% CI",
+            )
+            axs[i].fill_between(
+                range(n - forecast_horizon, n),
+                mean_preds_pred - 2 * std_preds_pred,
+                mean_preds_pred + 2 * std_preds_pred,
+                alpha=0.2,
+                label="Forecast 95% CI",
+            )
 
         axs[i].set_title(f"{group}")
     plt.suptitle(

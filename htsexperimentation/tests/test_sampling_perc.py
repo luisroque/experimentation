@@ -16,7 +16,7 @@ from htsexperimentation.visualization.plotting import (
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism"]
+        self.datasets = ["prison", "tourism", "m5"]
         data = {}
         for i in range(len(self.datasets)):
             with open(
@@ -35,11 +35,24 @@ class TestModel(unittest.TestCase):
             "mint90",
         ]
 
+        self.gpf_algorithms = [
+            "gpf_exact",
+            "gpf_exact75",
+            "gpf_exact90",
+        ]
+
         self.results_prison_gpf = ResultsHandler(
             path=self.results_path,
             dataset=self.datasets[0],
             algorithms=self.algorithms,
             groups=data[0],
+        )
+
+        self.results_m5_gpf = ResultsHandler(
+            path=self.results_path,
+            dataset=self.datasets[2],
+            algorithms=self.gpf_algorithms,
+            groups=data[2],
         )
 
     def test_results_load_gpf_exact_correctly(self):
@@ -58,7 +71,17 @@ class TestModel(unittest.TestCase):
         ] = self.results_prison_gpf.calculate_percent_diff(
             base_algorithm="gpf_exact", results=results
         )
-        boxplot(datasets_err=differences, err="rmse", zeroline=True)
+        boxplot(datasets_err=differences, err="rmse")
+
+    def test_compute_differences_gpf_variants_m5(self):
+        differences = {}
+        results = self.results_m5_gpf.compute_error_metrics(metric="rmse")
+        differences[
+            self.results_m5_gpf.dataset
+        ] = self.results_m5_gpf.calculate_percent_diff(
+            base_algorithm="gpf_exact", results=results
+        )
+        boxplot(datasets_err=differences, err="rmse")
 
     def test_results_handler_aggregate(self):
         _, res_sub = aggregate_results(
