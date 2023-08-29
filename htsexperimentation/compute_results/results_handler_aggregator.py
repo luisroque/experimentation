@@ -104,6 +104,7 @@ def aggregate_results_boxplot(
     datasets: List[str],
     results: Dict[str, ResultsHandler],
     ylims: List[List[int]] = None,
+    n_cols: int = 2,
 ) -> None:
     """
     Aggregate results from multiple datasets and plot them in a boxplot.
@@ -115,7 +116,7 @@ def aggregate_results_boxplot(
     """
     dataset_res = _aggregate_results_df(datasets, results)
 
-    boxplot(datasets_err=dataset_res, err="mase", ylim=ylims)
+    boxplot(datasets_err=dataset_res, err="mase", ylim=ylims, num_cols=n_cols)
 
 
 def aggregate_results_lineplot(

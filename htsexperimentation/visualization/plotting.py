@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union, Optional
 import re
 import math
 
@@ -239,11 +239,12 @@ def plot_boxplot(dfs, ax, dataset_name, gp_types=None):
 
 
 def boxplot(
-    datasets_err: Dict[str, pd.DataFrame],
+    datasets_err: Dict[str, Union[pd.DataFrame, Dict[str, pd.DataFrame]]],
     err: str,
-    figsize: tuple = (20, 10),
-    ylim: List = None,
-):
+    figsize: Tuple[int, int] = (20, 10),
+    ylim: Optional[List[Tuple[float, float]]] = None,
+    num_cols: int = 2
+) -> None:
     """
     Create a boxplot from the given data.
 
@@ -277,58 +278,30 @@ def boxplot(
             if value is not None:
                 dfs.append(value)
 
-    n_datasets = len(datasets)
-    if gp_types:
-        n_gp_types = len(gp_types)
-    else:
-        n_gp_types = 1
+    num_rows = -(-len(datasets) // num_cols)  # Ceil division
 
-    if n_datasets == 1:
-        _, ax = plt.subplots(1, 1, figsize=figsize)
-        plot_boxplot(dfs, ax, datasets[0], gp_types)
-        remove_axis_lines(ax)
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize)
+    axs = axs.ravel() if len(datasets) > 1 else [axs]
 
-        if ylim:
-            ax.set_ylim((ylim[0][0], ylim[0][1]))
+    for idx, (dataset, ax) in enumerate(zip(datasets, axs)):
+        y_limits = ylim[idx] if ylim else None
+        if y_limits:
+            ax.set_ylim(y_limits)
 
-        plt.legend()
-        plt.show()
-    else:
-        fig, axs = plt.subplots(
-            n_datasets // 2 + n_datasets % 2,
-            max((n_datasets - 1) // 2 + (n_datasets - 1) % 2, 2),
-            figsize=figsize,
-        )
-        axs = axs.ravel()
+        dfs_for_dataset = dfs[idx * len(gp_types): (idx + 1) * len(gp_types)]
+        plot_boxplot(dfs_for_dataset, ax, dataset, gp_types)
 
-        for dataset_idx in range(len(datasets)):
-            if ylim:
-                axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
-                axs[dataset_idx].axhline(y=0, linestyle="--", alpha=0.3, color="black")
-            dfs_for_dataset = dfs[
-                dataset_idx * n_gp_types : (dataset_idx + 1) * n_gp_types
-            ]
-            plot_boxplot(
-                dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types
-            )
-            axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
+    # Remove any extra, unused subplots
+    for idx in range(len(datasets), num_rows * num_cols):
+        axs[idx].axis('off')
 
-        fig.tight_layout()
-        fig.text(
-            0.02,
-            0.5,
-            f"Relative Difference of {err}",
-            ha="center",
-            va="center",
-            rotation="vertical",
-            fontsize=16,
-        )
-        fig.text(0.5, 0.02, "Groups", ha="center", va="center", fontsize=16)
+    fig.tight_layout()
+    fig.text(0.02, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
+    fig.text(0.5, 0.02, "Groups", ha="center", va="center", fontsize=16)
+    fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
-        fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
-
-        plt.legend()
-        plt.show()
+    plt.legend()
+    plt.show()
 
 
 def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
