@@ -67,7 +67,10 @@ class TestModel(unittest.TestCase):
             algorithms=self.algorithms,
         )
         aggregate_results_plot_hierarchy(
-            datasets=self.datasets, results=res, algorithm="deepar"
+            datasets=self.datasets,
+            results=res,
+            algorithm="deepar",
+            include_uncertainty=False,
         )
         aggregate_results_plot_hierarchy(
             datasets=self.datasets, results=res, algorithm="mint"

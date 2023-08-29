@@ -201,9 +201,9 @@ def aggregate_results_plot_hierarchy(
             plot_predictions_hierarchy(
                 *results_hierarchy,
                 *results_by_group_element,
-                group_elements,
-                results[dataset].h,
-                algorithm,
+                group_elements=group_elements,
+                forecast_horizon=results[dataset].h,
+                algorithm=algorithm,
                 include_uncertainty=include_uncertainty,
             )
 

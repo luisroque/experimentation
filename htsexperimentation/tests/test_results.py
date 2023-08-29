@@ -96,9 +96,9 @@ class TestModel(unittest.TestCase):
         plot_predictions_hierarchy(
             *results_hierarchy,
             *results_by_group_element,
-            group_elements,
-            self.results_prison.h,
-            "gpf_exact",
+            group_elements=group_elements,
+            forecast_horizon=self.results_prison.h,
+            algorithm="gpf_exact",
             include_uncertainty=False
         )
         mase_by_group = self.results_prison._compute_metric_from_results(
@@ -118,3 +118,24 @@ class TestModel(unittest.TestCase):
             results_hierarchy, results_by_group_element, group_elements, "mase"
         )
         plot_mase(mase_by_group)
+
+    def test_compute_mase_hierarchy_mint(self):
+        (
+            results_hierarchy,
+            results_by_group_element,
+            group_elements,
+        ) = self.results_prison.compute_results_hierarchy(algorithm="mint")
+        plot_predictions_hierarchy(
+            *results_hierarchy,
+            *results_by_group_element,
+            group_elements=group_elements,
+            forecast_horizon=self.results_prison.h,
+            algorithm="mint",
+            include_uncertainty=False
+        )
+        mase_by_group = self.results_prison._compute_metric_from_results(
+            results_hierarchy, results_by_group_element, group_elements, "mase"
+        )
+        self.assertTrue(
+            list(mase_by_group.keys()) == ["bottom", "top", "state", "gender", "legal"]
+        )
