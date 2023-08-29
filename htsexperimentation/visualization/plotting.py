@@ -283,21 +283,35 @@ def boxplot(
     fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize)
     axs = axs.ravel() if len(datasets) > 1 else [axs]
 
-    for idx, (dataset, ax) in enumerate(zip(datasets, axs)):
-        y_limits = ylim[idx] if ylim else None
-        if y_limits:
-            ax.set_ylim(y_limits)
+    if gp_types:
+        n_gp_types = len(gp_types)
+    else:
+        n_gp_types = 1
 
-        dfs_for_dataset = dfs[idx * len(gp_types): (idx + 1) * len(gp_types)]
-        plot_boxplot(dfs_for_dataset, ax, dataset, gp_types)
-
-    # Remove any extra, unused subplots
-    for idx in range(len(datasets), num_rows * num_cols):
-        axs[idx].axis('off')
+    for dataset_idx in range(len(datasets)):
+        if ylim:
+            axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
+            axs[dataset_idx].axhline(y=0, linestyle="--", alpha=0.3, color="black")
+        dfs_for_dataset = dfs[
+                          dataset_idx * n_gp_types: (dataset_idx + 1) * n_gp_types
+                          ]
+        plot_boxplot(
+            dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types
+        )
+        axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
 
     fig.tight_layout()
-    fig.text(0.02, 0.5, f"Relative Difference of {err}", ha="center", va="center", rotation="vertical", fontsize=16)
+    fig.text(
+        0.02,
+        0.5,
+        f"Relative Difference of {err}",
+        ha="center",
+        va="center",
+        rotation="vertical",
+        fontsize=16,
+    )
     fig.text(0.5, 0.02, "Groups", ha="center", va="center", fontsize=16)
+
     fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
     plt.legend()
