@@ -65,7 +65,7 @@ def plot_predictions_hierarchy(
     group_elements,
     forecast_horizon,
     algorithm,
-    include_uncertainty=True
+    include_uncertainty=True,
 ):
     (
         true_values_to_plot,
@@ -237,13 +237,44 @@ def plot_boxplot(dfs, ax, dataset_name, gp_types=None):
         ax.set_xlabel("")
         ax.set_ylabel("")
 
+    ax.legend().remove()
+
+
+def rename_keys_and_df(d, old_prefix, new_prefix):
+    new_dict = {}
+    old_prefix_len = len(old_prefix)
+
+    for key, value in d.items():
+        if key.startswith(old_prefix):
+            # Remove the old prefix and prepend the new prefix
+            new_key = new_prefix + key[old_prefix_len:]
+        else:
+            new_key = key
+
+        if isinstance(value, pd.DataFrame):
+            for old_alg_name in value["algorithm"].unique():
+                if old_alg_name.startswith(old_prefix):
+                    new_alg_name = new_prefix + old_alg_name[old_prefix_len:]
+                    value.loc[
+                        value["algorithm"] == old_alg_name, "algorithm"
+                    ] = new_alg_name
+            new_dict[new_key] = value
+        elif isinstance(value, dict):
+            new_dict[new_key] = rename_keys_and_df(value, old_prefix, new_prefix)
+        else:
+            new_dict[new_key] = value
+
+    return new_dict
+
 
 def boxplot(
     datasets_err: Dict[str, Union[pd.DataFrame, Dict[str, pd.DataFrame]]],
     err: str,
     figsize: Tuple[int, int] = (20, 10),
     ylim: Optional[List[Tuple[float, float]]] = None,
-    num_cols: int = 2
+    num_cols: int = 2,
+    old_key: str = "gpf",
+    replace_key: str = "gauphor",
 ) -> None:
     """
     Create a boxplot from the given data.
@@ -258,6 +289,8 @@ def boxplot(
         A matplotlib figure containing the boxplot.
     """
     set_plot_style()
+
+    datasets_err = rename_keys_and_df(datasets_err, old_key, replace_key)
 
     datasets = []
     dfs = []
@@ -283,28 +316,21 @@ def boxplot(
     fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize)
     axs = axs.ravel() if len(datasets) > 1 else [axs]
 
-    if gp_types:
-        n_gp_types = len(gp_types)
-    else:
-        n_gp_types = 1
+    n_gp_types = len(gp_types) if gp_types else 1
 
     for dataset_idx in range(len(datasets)):
         if ylim:
             axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
             axs[dataset_idx].axhline(y=0, linestyle="--", alpha=0.3, color="black")
-        dfs_for_dataset = dfs[
-                          dataset_idx * n_gp_types: (dataset_idx + 1) * n_gp_types
-                          ]
-        plot_boxplot(
-            dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types
-        )
+        dfs_for_dataset = dfs[dataset_idx * n_gp_types : (dataset_idx + 1) * n_gp_types]
+        plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types)
         axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
 
     fig.tight_layout()
     fig.text(
         0.02,
         0.5,
-        f"Relative Difference of {err}",
+        f"{err}",
         ha="center",
         va="center",
         rotation="vertical",
@@ -314,7 +340,7 @@ def boxplot(
 
     fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
-    plt.legend()
+    axs[-1].legend()
     plt.show()
 
 
