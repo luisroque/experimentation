@@ -20,9 +20,11 @@ class TestModel(unittest.TestCase):
             results_path=self.results_path,
             algorithms=self.algorithms_gpf_sub,
             sampling_dataset=True,
-            use_version_to_search=True
+            use_version_to_search=True,
         )
 
     def test_results_handler_aggregate(self):
-        res_sub_df = aggregate_results_table(datasets=self.datasets, results=self.res_sub)
-        self.assertTrue(len(res_sub_df) == 2)
+        res_sub_df = aggregate_results_table(
+            datasets=self.datasets, results=self.res_sub
+        )
+        self.assertTrue(res_sub_df.shape == (21, 4))

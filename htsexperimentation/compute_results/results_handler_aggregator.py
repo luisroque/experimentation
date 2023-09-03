@@ -215,28 +215,3 @@ def aggregate_results_plot_hierarchy(
                 include_uncertainty=include_uncertainty,
             )
 
-
-def aggregate_hyperparameter(
-    datasets: List[str],
-    results_handler: Dict[str, ResultsHandler],
-    algorithm: str,
-    path_to_logs: str = "./logs/",
-) -> pd.DataFrame:
-    """
-    Aggregate hyperparameters from multiple datasets and return them in a DataFrame.
-
-    Args:
-        datasets: A list of dataset names to be processed.
-        results_handler: A dictionary of ResultsHandler objects for each dataset.
-        algorithm: The name of the algorithm to use.
-        path_to_logs: The path to the log directory.
-
-    Returns:
-        A DataFrame containing the aggregated hyperparameters.
-    """
-    hyperparameters = []
-    for dataset in datasets:
-        hyperparameters.append(
-            results_handler[dataset].load_hyperparameters_logs(algorithm, path_to_logs)
-        )
-    return json_normalize(hyperparameters)

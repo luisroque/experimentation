@@ -314,7 +314,7 @@ def boxplot(
     num_rows = -(-len(datasets) // num_cols)  # Ceil division
 
     fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize)
-    axs = axs.ravel() if len(datasets) > 1 else [axs]
+    axs = axs.ravel() if len(datasets) > 1 else axs
 
     n_gp_types = len(gp_types) if gp_types else 1
 
@@ -325,6 +325,9 @@ def boxplot(
         dfs_for_dataset = dfs[dataset_idx * n_gp_types : (dataset_idx + 1) * n_gp_types]
         plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types)
         axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
+
+    for i in range(len(datasets), num_rows * num_cols):
+        axs[i].set_visible(False)
 
     fig.tight_layout()
     fig.text(

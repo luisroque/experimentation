@@ -39,7 +39,7 @@ class TestModel(unittest.TestCase):
         )
         aggregate_results_boxplot(datasets=self.datasets, results=res_gpf)
 
-    def test_results_handler_aggregate_boxplot(self):
+    def test_results_handler_boxplot(self):
         res_gpf, res = aggregate_results(
             datasets=self.datasets,
             results_path=self.results_path,

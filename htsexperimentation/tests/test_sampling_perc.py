@@ -96,13 +96,13 @@ class TestModel(unittest.TestCase):
 
     def test_results_handler_aggregate_lineplot(self):
         _, res_sub = aggregate_results(
-            datasets=self.datasets,
+            datasets=[self.datasets[0]],
             results_path=self.results_path,
             algorithms=self.algorithms,
             sampling_dataset=True,
         )
         aggregate_results_lineplot(
-            datasets=self.datasets, results=res_sub, ylims=[[-0.5, 4], [0, 0.5]]
+            datasets=[self.datasets[0]], results=res_sub, ylims=[[-0.5, 4], [0, 0.5]]
         )
 
     def test_aggregate_results_plot_hierarchy_mint(self):
@@ -156,5 +156,4 @@ class TestModel(unittest.TestCase):
             datasets_err=differences,
             err="rmse",
             ylim=[[-2, 20], [-1, 50]],
-            zeroline=True,
         )

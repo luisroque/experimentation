@@ -72,7 +72,7 @@ class TestModel(unittest.TestCase):
         differences[self.results_tourism_gpf.dataset] = self.results_tourism_gpf.calculate_percent_diff(
             base_algorithm="gpf_exact", results=results
         )
-        boxplot(datasets_err=differences, err="rmse", zeroline=True)
+        boxplot(datasets_err=differences, err="rmse")
 
     def test_create_boxplot_all_algorithms(self):
         dataset_res = {}
