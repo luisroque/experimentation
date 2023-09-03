@@ -504,6 +504,7 @@ def _plot_barplot(
 def lineplot(
     datasets_err: Dict[str, pd.DataFrame],
     err: str,
+    n_cols: int,
     figsize: Tuple[int, int] = (20, 10),
     ylim: List[Tuple[float, float]] = None,
 ):
@@ -522,8 +523,8 @@ def lineplot(
         A matplotlib figure containing the lineplot.
     """
     n_datasets = len(datasets_err)
-    n_cols = min(n_datasets, 2)
-    n_rows = math.ceil(n_datasets / n_cols)
+    n_cols = n_datasets
+    n_rows = 1
 
     fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize, sharex=True)
     axs = np.atleast_2d(axs)

@@ -214,4 +214,3 @@ def aggregate_results_plot_hierarchy(
                 algorithm=algorithm,
                 include_uncertainty=include_uncertainty,
             )
-
