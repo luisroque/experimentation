@@ -349,7 +349,7 @@ def boxplot(
 
 def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
     data["group_level"] = data.apply(
-        #lambda row: f"{'top' if row['group'] == 'top' else 'bottom' if row['group'] == 'bottom' else 'groups'}",
+        # lambda row: f"{'top' if row['group'] == 'top' else 'bottom' if row['group'] == 'bottom' else 'groups'}",
         lambda row: f"{'bottom' if row['group'] == 'bottom' else 'upper'}",
         axis=1,
     )
@@ -396,16 +396,22 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
         algorithm_df = data[data["algorithm"].str.startswith(algorithm)]
         if not algorithm_df.empty:
             x = algorithm_df["algorithm"].apply(
-                lambda x: int(re.match(r"([^\d]+)(\d+)", x).group(2))
+                lambda x: 100 - int(re.match(r"([^\d]+)(\d+)", x).group(2))
                 if re.match(r"([^\d]+)(\d+)", x)
-                else 100
+                else 0  # Set x=0 for original runs
             )
             y_mean = algorithm_df["value_mean"]
             y_std = algorithm_df["value_std"]
             group_level = algorithm_df["group_level"]
             extracted_data.append(
                 pd.DataFrame(
-                    {"x": x, "y_mean": y_mean, "y_std": y_std, "algorithm": algorithm, "group_level": group_level}
+                    {
+                        "x": x,
+                        "y_mean": y_mean,
+                        "y_std": y_std,
+                        "algorithm": algorithm,
+                        "group_level": group_level,
+                    }
                 )
             )
     extracted_data = pd.concat(extracted_data)
@@ -415,13 +421,16 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
 
 def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors: Dict):
     # Compute and plot the relative difference
-    base_data = extracted_data[extracted_data["x"] == 100]
+    base_data = extracted_data[extracted_data["x"] == 0]
     markers = ["o", "s", "^", "D", "X", "P", "v", "*", "H", "d"]
     marker_index = 0
 
-    for (algorithm, group), group_data in extracted_data.groupby(['algorithm', 'group_level']):
-        base_mean = \
-        base_data[(base_data['algorithm'] == algorithm) & (base_data['group_level'] == group)]['y_mean'].values[0]
+    for (algorithm, group), group_data in extracted_data.groupby(
+        ["algorithm", "group_level"]
+    ):
+        base_mean = base_data[
+            (base_data["algorithm"] == algorithm) & (base_data["group_level"] == group)
+        ]["y_mean"].values[0]
 
         # Calculate relative difference
         algorithm_diff = (group_data["y_mean"] - base_mean) / base_mean
@@ -434,7 +443,7 @@ def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors:
             linewidth=2,
             marker=markers[marker_index],
             markersize=8,
-            color=colors[algorithm]
+            color=colors[algorithm],
         )
 
         marker_index = (marker_index + 1) % len(markers)
@@ -548,7 +557,7 @@ def lineplot(
         fontsize=16,
     )
     fig.text(
-        0.5, 0.02, "Percentage of Dataset Used", ha="center", va="center", fontsize=16
+        0.5, 0.02, "Percentage of Missing Data", ha="center", va="center", fontsize=16
     )
 
     fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
