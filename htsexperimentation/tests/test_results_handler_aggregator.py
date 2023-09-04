@@ -11,11 +11,11 @@ from htsexperimentation.compute_results.results_handler_aggregator import (
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism"]
+        self.datasets = ["tourism", "m5"]
         self.results_path = "./results/"
         self.algorithms = ["mint", "gpf_exact", "deepar"]
         self.algorithms_gpf = ["gpf_exact", "gpf_svg", "gpf_sparse"]
-        self.datasets_no_version = ["prison"]
+        self.datasets_no_version = ["tourism"]
 
     def test_results_handler_aggregate(self):
         res_gpf, res = aggregate_results(

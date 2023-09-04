@@ -16,7 +16,7 @@ from htsexperimentation.visualization.plotting import (
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["prison", "tourism", "m5"]
+        self.datasets = ["tourism", "m5", "police"]
         data = {}
         for i in range(len(self.datasets)):
             with open(
