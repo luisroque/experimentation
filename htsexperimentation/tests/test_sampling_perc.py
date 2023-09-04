@@ -113,7 +113,7 @@ class TestModel(unittest.TestCase):
         aggregate_results_lineplot(
             datasets=self.datasets,
             results=res_sub,
-            ylims=[[-0.1, 1.5], [-0.1, 1], [-0.3, 0.3]],
+            ylims=[[-0.1, 1.5], [-0.1, 1], [-0.2, 0.2]],
         )
 
     def test_aggregate_results_plot_hierarchy_mint(self):
