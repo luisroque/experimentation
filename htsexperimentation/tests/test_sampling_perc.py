@@ -28,11 +28,20 @@ class TestModel(unittest.TestCase):
         self.results_path = "./results/"
         self.algorithms = [
             "gpf_exact",
+            "gpf_exact50",
+            "gpf_exact60",
             "gpf_exact75",
             "gpf_exact90",
             "mint",
+            "mint50",
+            "mint60",
             "mint75",
             "mint90",
+            "deepar",
+            "deepar50",
+            "deepar60",
+            "deepar75",
+            "deepar90"
         ]
 
         self.gpf_algorithms = [
@@ -104,7 +113,7 @@ class TestModel(unittest.TestCase):
         aggregate_results_lineplot(
             datasets=self.datasets,
             results=res_sub,
-            ylims=[[-0.5, 4], [0, 0.5], [0, 0.5]],
+            ylims=[[-0.1, 1.5], [-0.1, 1], [-0.3, 0.3]],
         )
 
     def test_aggregate_results_plot_hierarchy_mint(self):

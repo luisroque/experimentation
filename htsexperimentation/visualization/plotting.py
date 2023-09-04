@@ -348,20 +348,18 @@ def boxplot(
 
 
 def _getting_mean_err_per_algorithm(data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Preprocess the data by grouping it by algorithm and calculating the mean and standard deviation.
-
-    Args:
-        data: The input data in a pandas DataFrame.
-
-    Returns:
-        A pandas DataFrame containing the preprocessed data.
-    """
-    df_mean = data.groupby(["algorithm"]).mean()
-    df_std = data.groupby(["algorithm"]).std()
+    data["group_level"] = data.apply(
+        #lambda row: f"{'top' if row['group'] == 'top' else 'bottom' if row['group'] == 'bottom' else 'groups'}",
+        lambda row: f"{'bottom' if row['group'] == 'bottom' else 'upper'}",
+        axis=1,
+    )
+    df_mean = data.groupby(["algorithm", "group_level"]).mean()
+    df_std = data.groupby(["algorithm", "group_level"]).std()
     df_mean.reset_index(inplace=True)
     df_std.reset_index(inplace=True)
-    df = pd.merge(df_mean, df_std, on="algorithm", suffixes=("_mean", "_std"))
+    df = pd.merge(
+        df_mean, df_std, on=["algorithm", "group_level"], suffixes=("_mean", "_std")
+    )
     return df
 
 
@@ -404,9 +402,10 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
             )
             y_mean = algorithm_df["value_mean"]
             y_std = algorithm_df["value_std"]
+            group_level = algorithm_df["group_level"]
             extracted_data.append(
                 pd.DataFrame(
-                    {"x": x, "y_mean": y_mean, "y_std": y_std, "algorithm": algorithm}
+                    {"x": x, "y_mean": y_mean, "y_std": y_std, "algorithm": algorithm, "group_level": group_level}
                 )
             )
     extracted_data = pd.concat(extracted_data)
@@ -414,54 +413,34 @@ def _extract_x_y(data: pd.DataFrame) -> pd.DataFrame:
     return extracted_data
 
 
-def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors: List):
-    """
-    Plot a lineplot with standard deviation from the extracted data.
-
-    Args:
-        extracted_data: A pandas DataFrame containing the extracted x and y data for each algorithm.
-        err: The error metric to use for the lineplot.
-        ax: The matplotlib axes object to use for the lineplot.
-        zeroline: A boolean indicating whether to draw a horizontal line at y=0.
-
-    Returns:
-        None.
-    """
+def _plot_lineplot(extracted_data: pd.DataFrame, err: str, ax: plt.Axes, colors: Dict):
     # Compute and plot the relative difference
     base_data = extracted_data[extracted_data["x"] == 100]
-    markers = [
-        "o",
-        "s",
-        "^",
-        "D",
-        "X",
-        "P",
-        "v",
-        "*",
-        "H",
-        "d",
-    ]  # A list of marker symbols
+    markers = ["o", "s", "^", "D", "X", "P", "v", "*", "H", "d"]
     marker_index = 0
-    for algorithm in extracted_data["algorithm"].unique():
-        base_mean = base_data[base_data["algorithm"] == algorithm]["y_mean"].values[0]
-        base_algorithm = base_data[base_data["algorithm"] == algorithm][
-            "algorithm"
-        ].values[0]
-        algorithm_data = extracted_data[extracted_data["algorithm"] == algorithm]
-        algorithm_diff = (algorithm_data["y_mean"] - base_mean) / base_mean
+
+    for (algorithm, group), group_data in extracted_data.groupby(['algorithm', 'group_level']):
+        base_mean = \
+        base_data[(base_data['algorithm'] == algorithm) & (base_data['group_level'] == group)]['y_mean'].values[0]
+
+        # Calculate relative difference
+        algorithm_diff = (group_data["y_mean"] - base_mean) / base_mean
+
+        label_name = f"{algorithm} - {group}"
         ax.plot(
-            algorithm_data["x"],
+            group_data["x"],
             algorithm_diff,
-            label=f"{algorithm}",
+            label=label_name,
             linewidth=2,
             marker=markers[marker_index],
             markersize=8,
-            color=colors[algorithm],
+            color=colors[algorithm]
         )
+
         marker_index = (marker_index + 1) % len(markers)
 
-        ax.set_facecolor("#EAEAF2")
-        ax.grid(color="white", linestyle="-", linewidth=0.5)
+    ax.set_facecolor("#EAEAF2")
+    ax.grid(color="white", linestyle="-", linewidth=0.5)
 
 
 def _plot_barplot(
