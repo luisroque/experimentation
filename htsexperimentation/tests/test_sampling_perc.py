@@ -70,7 +70,7 @@ class TestModel(unittest.TestCase):
             res_type="fitpred",
             res_measure="mean",
         )
-        self.assertTrue(res[0].shape == (48, 32))
+        self.assertTrue(res[0].shape == (228, 32))
 
     def test_compute_differences_gpf_variants(self):
         differences = {}

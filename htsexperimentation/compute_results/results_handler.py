@@ -164,17 +164,24 @@ class ResultsHandler:
         return result, algorithm_w_type
 
     # -------- Compute results and error metrics -------- #
-    def compute_error_metrics(self, metric: str = "mase") -> Dict[str, float]:
+    def compute_error_metrics(
+        self, metric: str = "mase", seasonality_map: Dict = None
+    ) -> Dict[str, float]:
         """Computes error metrics for each algorithm.
 
         Args:
             metric (str): The name of the error metric to use. Default is 'mase'.
+            seasonality_map (Dict): A map of seasonality values for each algorithm.
 
         Returns:
             Dict: A dictionary where the keys are the names of the algorithms and
             the values are dictionaries containing the error metric values for each
             group and each group element.
         """
+        if seasonality_map is None:
+            seasonality_map = {}
+
+        seasonality = seasonality_map.get(self.dataset, None)
         metric_algorithm = {}
         for algorithm in self.algorithms:
             (
@@ -188,6 +195,7 @@ class ResultsHandler:
                 results_by_group_element,
                 group_elements,
                 metric=metric,
+                seasonality=seasonality,
             )
         return metric_algorithm
 
@@ -203,6 +211,7 @@ class ResultsHandler:
         ],
         group_elements: Dict[str, List[str]],
         metric: str = "mase",
+        seasonality: int = None,
     ) -> Dict[str, Union[float, Dict[str, float]]]:
         """Computes a given error metric for the results hierarchy and results by group element.
 
@@ -219,6 +228,9 @@ class ResultsHandler:
             either the error metric value for the group or a dictionary containing the error
             metric values for each group element.
         """
+        if not seasonality:
+            seasonality = self.seasonality
+
         res = None
         metric_by_group = {}
         for group in results_hierarchy[0].keys():
@@ -229,7 +241,7 @@ class ResultsHandler:
                     y_true=y_true[-self.h :],
                     y_pred=y_pred[-self.h :],
                     y_train=y_true[: self.n - self.h],
-                    sp=self.seasonality,
+                    sp=seasonality,
                 )
             elif metric == "rmse":
                 res = np.sqrt(
@@ -250,7 +262,7 @@ class ResultsHandler:
                         y_true=y_true[-self.h :],
                         y_pred=y_pred[-self.h :],
                         y_train=y_true[: self.n - self.h],
-                        sp=self.seasonality,
+                        sp=seasonality,
                     )
                 elif metric == "rmse":
                     res = np.sqrt(
@@ -439,7 +451,7 @@ class ResultsHandler:
         ]:
             versions.append(self._extract_version(file))
         if len(versions) > 0:
-            versions.sort(key=lambda s: list(map(int, s.split('.'))), reverse=True)
+            versions.sort(key=lambda s: list(map(int, s.split("."))), reverse=True)
             return versions[0]
         else:
             return None

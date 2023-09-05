@@ -11,11 +11,12 @@ from htsexperimentation.compute_results.results_handler_aggregator import (
 
 class TestModel(unittest.TestCase):
     def setUp(self):
-        self.datasets = ["tourism", "m5", "police"]
+        self.datasets = ["tourism", "m5"]
         self.results_path = "./results/"
         self.algorithms = ["mint", "gpf_exact", "deepar"]
-        self.algorithms_gpf = ["gpf_exact"]
+        self.algorithms_gpf = ["gpf_exact", "gpf_svg"]
         self.datasets_no_version = ["tourism"]
+        self.seasonality_map = {"police": 1}
 
     def test_results_handler_aggregate(self):
         res_gpf, res = aggregate_results(
@@ -35,7 +36,22 @@ class TestModel(unittest.TestCase):
             algorithms=self.algorithms,
         )
         aggregate_results_boxplot(
-            datasets=self.datasets, results=res, ylims=[[0, 10], [0, 2]]
+            datasets=self.datasets, results=res, ylims=[[0, 2], [0, 2], [0, 2]]
+        )
+        aggregate_results_boxplot(datasets=self.datasets, results=res_gpf)
+
+    def test_results_handler_aggregate_boxplot_seasonality_map(self):
+        res_gpf, res = aggregate_results(
+            datasets=self.datasets,
+            results_path=self.results_path,
+            algorithms_gpf=self.algorithms_gpf,
+            algorithms=self.algorithms,
+        )
+        aggregate_results_boxplot(
+            datasets=self.datasets,
+            results=res,
+            ylims=[[0, 2], [0, 2], [0, 2]],
+            seasonality_map=self.seasonality_map,
         )
         aggregate_results_boxplot(datasets=self.datasets, results=res_gpf)
 
@@ -95,7 +111,7 @@ class TestModel(unittest.TestCase):
             res_df.loc[
                 (res_df.group == "bottom")
                 & (res_df.algorithm == "mint")
-                & (res_df.dataset == "prison")
+                & (res_df.dataset == "tourism")
             ].value.item()
             < 3
         )

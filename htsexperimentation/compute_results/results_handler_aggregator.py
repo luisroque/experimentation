@@ -80,7 +80,9 @@ def aggregate_results(
 
 
 def _aggregate_results_df(
-    datasets: List[str], results: Dict[str, ResultsHandler]
+    datasets: List[str],
+    results: Dict[str, ResultsHandler],
+    seasonality_map: Dict = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     Aggregate results from multiple datasets into a DataFrame.
@@ -94,7 +96,9 @@ def _aggregate_results_df(
     """
     dataset_res = {}
     for dataset in datasets:
-        res = results[dataset].compute_error_metrics(metric="mase")
+        res = results[dataset].compute_error_metrics(
+            metric="mase", seasonality_map=seasonality_map
+        )
         res_obj = results[dataset].dict_to_df(res, "")
         dataset_res[dataset] = results[dataset].concat_dfs(res_obj)
     return dataset_res
@@ -106,6 +110,7 @@ def aggregate_results_boxplot(
     ylims: List[List[int]] = None,
     figsize: Tuple[int, int] = (20, 10),
     n_cols: int = 2,
+    seasonality_map: Dict = None,
 ) -> None:
     """
     Aggregate results from multiple datasets and plot them in a boxplot.
@@ -115,7 +120,9 @@ def aggregate_results_boxplot(
         results: A dictionary of results for each dataset.
         ylims: A tuple of the lower and upper y-axis limits for the plot.
     """
-    dataset_res = _aggregate_results_df(datasets, results)
+    dataset_res = _aggregate_results_df(
+        datasets, results, seasonality_map=seasonality_map
+    )
 
     boxplot(
         datasets_err=dataset_res,

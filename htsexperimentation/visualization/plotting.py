@@ -318,6 +318,8 @@ def boxplot(
 
     n_gp_types = len(gp_types) if gp_types else 1
 
+    last_visible_axis = None
+
     for dataset_idx in range(len(datasets)):
         if ylim:
             axs[dataset_idx].set_ylim((ylim[dataset_idx][0], ylim[dataset_idx][1]))
@@ -325,6 +327,8 @@ def boxplot(
         dfs_for_dataset = dfs[dataset_idx * n_gp_types : (dataset_idx + 1) * n_gp_types]
         plot_boxplot(dfs_for_dataset, axs[dataset_idx], datasets[dataset_idx], gp_types)
         axs[dataset_idx] = remove_axis_lines(axs[dataset_idx])
+
+        last_visible_axis = axs[dataset_idx]
 
     for i in range(len(datasets), num_rows * num_cols):
         axs[i].set_visible(False)
@@ -343,7 +347,8 @@ def boxplot(
 
     fig.subplots_adjust(left=0.05, bottom=0.1, wspace=0.15)
 
-    axs[-1].legend()
+    if last_visible_axis is not None:
+        last_visible_axis.legend()
     plt.show()
 
 
@@ -494,6 +499,8 @@ def lineplot(
     err: str,
     figsize: Tuple[int, int] = (20, 10),
     ylim: List[Tuple[float, float]] = None,
+    old_key: str = "gpf",
+    replace_key: str = "gauphor",
 ):
     """
     Create a lineplot from the given data.
@@ -509,6 +516,9 @@ def lineplot(
     Returns:
         A matplotlib figure containing the lineplot.
     """
+
+    datasets_err = rename_keys_and_df(datasets_err, old_key, replace_key)
+
     n_datasets = len(datasets_err)
     n_cols = n_datasets
     n_rows = 1
@@ -520,7 +530,7 @@ def lineplot(
 
     for i, (dataset, data) in enumerate(datasets_err.items()):
         algo_colors = {
-            "gpf_exact": "#1f77b4",
+            "gauphor_exact": "#1f77b4",
             "mint": "darkorange",
             "deepar": "#2ca02c",
         }
@@ -570,6 +580,8 @@ def barplot(
     err: str,
     figsize: Tuple[int, int] = (20, 10),
     ylim: List[Tuple[float, float]] = None,
+    old_key: str = "gpf",
+    replace_key: str = "gauphor",
 ):
     """
     Create a barplot from the given data.
@@ -584,6 +596,8 @@ def barplot(
     Returns:
         A matplotlib figure containing the barplot.
     """
+    datasets_err = rename_keys_and_df(datasets_err, old_key, replace_key)
+
     n_datasets = len(datasets_err)
     n_cols = min(n_datasets, 2)
     n_rows = math.ceil(n_datasets / n_cols)
