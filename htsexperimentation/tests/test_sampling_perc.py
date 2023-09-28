@@ -50,7 +50,7 @@ class TestModel(unittest.TestCase):
             "gpf_exact90",
         ]
 
-        self.results_prison_gpf = ResultsHandler(
+        self.results_tourism_gpf = ResultsHandler(
             path=self.results_path,
             dataset=self.datasets[0],
             algorithms=self.algorithms,
@@ -65,19 +65,19 @@ class TestModel(unittest.TestCase):
         )
 
     def test_results_load_gpf_exact_correctly(self):
-        res = self.results_prison_gpf.load_results_algorithm(
+        res = self.results_tourism_gpf.load_results_algorithm(
             algorithm="gpf_exact",
             res_type="fitpred",
             res_measure="mean",
         )
-        self.assertTrue(res[0].shape == (228, 32))
+        self.assertTrue(res[0].shape == (228, 304))
 
     def test_compute_differences_gpf_variants(self):
         differences = {}
-        results = self.results_prison_gpf.compute_error_metrics(metric="rmse")
+        results = self.results_tourism_gpf.compute_error_metrics(metric="rmse")
         differences[
-            self.results_prison_gpf.dataset
-        ] = self.results_prison_gpf.calculate_percent_diff(
+            self.results_tourism_gpf.dataset
+        ] = self.results_tourism_gpf.calculate_percent_diff(
             base_algorithm="gpf_exact", results=results
         )
         boxplot(datasets_err=differences, err="rmse")

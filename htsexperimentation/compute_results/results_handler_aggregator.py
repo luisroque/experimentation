@@ -1,6 +1,7 @@
 import pickle
+import numpy as np
+import os
 from typing import List, Dict, Tuple, Any
-from pandas import json_normalize
 import pandas as pd
 from htsexperimentation.compute_results.results_handler import ResultsHandler
 from htsexperimentation.visualization.plotting import (
@@ -10,16 +11,80 @@ from htsexperimentation.visualization.plotting import (
     plot_predictions_hierarchy,
 )
 from htsexperimentation.helpers.helper_func import concat_dataset_dfs
+from copy import deepcopy
+import tsaugmentation as tsag
+from tsaugmentation.preprocessing import CreateGroups
 
 
-def _read_original_data(datasets):
+def create_groups_from_data(dataset_name, transf_data, freq, sample_perc=None):
+    if sample_perc:
+        dataset = tsag.preprocessing.PreprocessDatasets(
+            dataset_name, sample_perc=sample_perc, freq=freq
+        )
+        groups = dataset.apply_preprocess()
+    else:
+        groups = CreateGroups(
+            dataset_name=dataset_name, freq=freq
+        ).read_original_groups()
+
+    vis = tsag.visualization.Visualizer(dataset_name, transf_data=transf_data)
+
+    return groups, vis
+
+
+def get_aggregate_key_and_freq(dataset_name):
+    """
+    Returns the aggregate key and frequency corresponding to the specified dataset.
+    """
+    if dataset_name == "tourism":
+        aggregate_key = "state * zone * region * purpose"
+        freq = "MS"
+    elif dataset_name == "m5":
+        aggregate_key = "Department * Category * Store * State * Item"
+        freq = "W"
+    elif dataset_name == "police":
+        aggregate_key = "Crime * Beat * Street * ZIP"
+        freq = "D"
+    else:
+        # Dataset is prison
+        aggregate_key = "state * gender * legal"
+        freq = "QS"
+    return aggregate_key, freq
+
+
+def _read_original_data(
+        datasets: List[str],
+        load_transformed: bool = False,
+        transformation: str = None,
+        version: str = None,
+        sample: str = None,
+) -> dict:
     data = {}
+
     for dataset in datasets:
-        with open(
-            f"./data/data_{dataset}.pickle",
-            "rb",
-        ) as handle:
-            data[dataset] = pickle.load(handle)
+        if load_transformed:
+            version_idx = int(version[1:])
+            sample_idx = int(sample[1:])
+            _, freq = get_aggregate_key_and_freq(dataset)
+
+            groups, vis = create_groups_from_data(
+                dataset, 'whole', freq
+            )
+
+            vis._read_files(f"single_transf_{transformation}")
+            groups_transf = deepcopy(groups)
+            groups_transf["train"]["data"] = vis.y_new[version_idx, sample_idx][
+                                             : groups_transf["train"]["n"]
+                                             ]
+            groups_transf["predict"]["data"] = vis.y_new[version_idx, sample_idx].T
+            groups_transf["predict"]["data_matrix"] = vis.y_new[version_idx, sample_idx]
+
+            data[dataset] = groups_transf
+        else:
+            file_path = f"./data/data_{dataset}.pickle"
+            with open(file_path, "rb") as handle:
+                data[dataset] = pickle.load(handle)
+
     return data
 
 
@@ -30,6 +95,10 @@ def aggregate_results(
     algorithms: List[str] = None,
     sampling_dataset: bool = False,
     use_version_to_search: bool = True,
+    load_transformed: bool = False,
+    transformation: str = None,
+    version: str = None,
+    sample: str = None,
 ) -> Tuple[Dict[str, ResultsHandler], Dict[str, ResultsHandler]]:
     """
     Aggregate results from multiple datasets using the specified algorithms.
@@ -47,7 +116,13 @@ def aggregate_results(
     results_gpf = {}
     results = {}
     i = 0
-    data = _read_original_data(datasets)
+    data = _read_original_data(
+        datasets,
+        load_transformed=load_transformed,
+        transformation=transformation,
+        version=version,
+        sample=sample,
+    )
     for dataset in datasets:
         if algorithms_gpf:
             results_gpf[dataset] = ResultsHandler(
@@ -56,6 +131,10 @@ def aggregate_results(
                 algorithms=algorithms_gpf,
                 groups=data[dataset],
                 use_version_to_search=use_version_to_search,
+                load_transformed=load_transformed,
+                transformation=transformation,
+                version=version,
+                sample=sample,
             )
         if algorithms and sampling_dataset:
             results[dataset] = ResultsHandler(
@@ -65,6 +144,10 @@ def aggregate_results(
                 groups=data[dataset],
                 sampling_dataset=sampling_dataset,
                 use_version_to_search=use_version_to_search,
+                load_transformed=load_transformed,
+                transformation=transformation,
+                version=version,
+                sample=sample,
             )
         elif algorithms:
             results[dataset] = ResultsHandler(
@@ -73,13 +156,17 @@ def aggregate_results(
                 algorithms=algorithms,
                 groups=data[dataset],
                 use_version_to_search=use_version_to_search,
+                load_transformed=load_transformed,
+                transformation=transformation,
+                version=version,
+                sample=sample,
             )
         i += 1
 
     return results_gpf, results
 
 
-def _aggregate_results_df(
+def aggregate_results_df(
     datasets: List[str],
     results: Dict[str, ResultsHandler],
     seasonality_map: Dict = None,
@@ -120,7 +207,7 @@ def aggregate_results_boxplot(
         results: A dictionary of results for each dataset.
         ylims: A tuple of the lower and upper y-axis limits for the plot.
     """
-    dataset_res = _aggregate_results_df(
+    dataset_res = aggregate_results_df(
         datasets, results, seasonality_map=seasonality_map
     )
 
@@ -146,7 +233,7 @@ def aggregate_results_lineplot(
         results: A dictionary of results for each dataset.
         ylims: A tuple of the lower and upper y-axis limits for the plot.
     """
-    dataset_res = _aggregate_results_df(datasets, results)
+    dataset_res = aggregate_results_df(datasets, results)
 
     lineplot(datasets_err=dataset_res, err="mase", ylim=ylims)
 
@@ -164,7 +251,7 @@ def aggregate_results_barplot(
         results: A dictionary of results for each dataset.
         ylims: A tuple of the lower and upper y-axis limits for the plot.
     """
-    dataset_res = _aggregate_results_df(datasets, results)
+    dataset_res = aggregate_results_df(datasets, results)
 
     barplot(datasets_err=dataset_res, err="mase", ylim=ylims)
 
@@ -182,7 +269,7 @@ def aggregate_results_table(
     Returns:
         A DataFrame containing the aggregated results.
     """
-    dataset_res = _aggregate_results_df(datasets, results)
+    dataset_res = aggregate_results_df(datasets, results)
     res_df = concat_dataset_dfs(dataset_res)
     res_df = (
         res_df.groupby(["group", "algorithm", "dataset"]).mean()["value"].reset_index()
@@ -211,7 +298,9 @@ def aggregate_results_plot_hierarchy(
     for dataset in datasets:
         (results_hierarchy, results_by_group_element, group_elements,) = results[
             dataset
-        ].compute_results_hierarchy(algorithm=algorithm)
+        ].compute_results_hierarchy(
+            algorithm=algorithm,
+        )
         if group_elements:
             plot_predictions_hierarchy(
                 *results_hierarchy,
@@ -221,3 +310,48 @@ def aggregate_results_plot_hierarchy(
                 algorithm=algorithm,
                 include_uncertainty=include_uncertainty,
             )
+
+
+def save_to_pickle(data, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
+
+
+def generate_pickle_filename(dataset, algorithm, transformation, version, sample, algo_version):
+    return f"metrics_gp_cov_{dataset}_{algorithm}_{transformation}_{version}_{sample}_wwhole_{algo_version}.pickle"
+
+
+def aggregate_and_save(datasets, results_path, algorithms, transformation, version, sample):
+    res_gpf, res = aggregate_results(
+        datasets=datasets,
+        results_path=results_path,
+        algorithms=algorithms,
+        load_transformed=True,
+        transformation=transformation,
+        version=version,
+        sample=sample
+    )
+
+    dataset_res = aggregate_results_df(
+        datasets, res
+    )
+
+    for dataset in datasets:
+        grouped_data = dataset_res[dataset].groupby(['group', 'algorithm']).mean().reset_index()
+        for algorithm in algorithms:
+            algo_version = res[dataset].algorithms_metadata[algorithm]['version']
+            aggregate_results_plot_hierarchy(
+                datasets=[dataset],
+                results=res,
+                algorithm=algorithm,
+                include_uncertainty=False
+            )
+
+            # Save results to pickle
+            sub_data = grouped_data[grouped_data['algorithm'] == algorithm]
+            error_data = sub_data.set_index('group')['value'].to_dict()
+
+            pickle_filename = generate_pickle_filename(dataset, algorithm, transformation, version, sample, algo_version)
+            full_path = os.path.join(results_path, algorithm, pickle_filename)
+
+            save_to_pickle({"mase": error_data}, full_path)

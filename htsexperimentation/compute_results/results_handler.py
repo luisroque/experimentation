@@ -20,6 +20,9 @@ class ResultsHandler:
         sampling_dataset=False,
         use_version_to_search=True,
         load_transformed=False,
+        transformation=None,
+        version=None,
+        sample=None,
     ):
         """
         Initialize a ResultsHandler instance.
@@ -35,6 +38,9 @@ class ResultsHandler:
         self.path = path
         self.groups = groups
         self.load_transformed = load_transformed
+        self.transf_transformation = transformation
+        self.transf_version = version
+        self.transf_sample = sample
         self.use_version_to_search = use_version_to_search
         self.h = self.groups["h"]
         self.seasonality = self.groups["seasonality"]
@@ -87,80 +93,83 @@ class ResultsHandler:
 
     # -------- Load results and hyperparameters -------- #
     def load_results_algorithm(
-        self, algorithm: str, res_type: str, res_measure: str
+        self,
+        algorithm: str,
+        res_type: str,
+        res_measure: str,
     ) -> Tuple[Dict, str]:
         """
         Load results for a given algorithm.
 
         Args:
-            algorithm: The algorithm to load results for.
-            res_type: defines the type of results, could be 'fit_pred' to receive fitted values plus
-                predictions or 'pred' to only store predictions
-            res_measure: defines the measure to store, could be 'mean' or 'std'
-            load_transformed: if True, load files that do not contain 'orig' in their name.
+            algorithm (str): The algorithm to load results for.
+            res_type (str): Defines the type of results, could be 'fit_pred' for fitted values plus
+                predictions or 'pred' for only predictions.
+            res_measure (str): Defines the measure to store, could be 'mean' or 'std'.
 
         Returns:
-            A list of results for the given algorithm.
+            Tuple[Dict, str]: A tuple containing the results dictionary and algorithm type.
         """
-        algorithm_w_type = ""
-        result = dict()
+        algo_metadata = self.algorithms_metadata.get(algorithm)
+        if not algo_metadata:
+            raise ValueError(f"No metadata found for algorithm: {algorithm}")
 
-        algo_type = self.algorithms_metadata[algorithm]["preselected_algo_type"]
-        algo_type_search = (
-            self.algorithms_metadata[algorithm]["preselected_algo_type"] + "_"
-        )
-
-        if algorithm in self.algorithms_metadata.keys():
-            for file in [
-                path
-                for path in os.listdir(
-                    self.algorithms_metadata[algorithm]["path_to_output_files"]
-                )
-                if self.dataset in path
-                and ("orig" not in path if self.load_transformed else "orig" in path)
-                and (
-                    not self.use_version_to_search
-                    or self.algorithms_metadata[algorithm]["version"] in path
-                )
-                and res_type in path
-                and res_measure in path
-                and "results" in path
-                and algo_type_search in path
-            ]:
-                result, algorithm_w_type = self._load_procedure(
-                    file, algorithm, algo_type
-                )
-
-        if not np.any(result):
+        file_paths = self._get_matching_files(algorithm, res_type, res_measure)
+        if not file_paths:
             raise ValueError(
                 f"Please make sure that you have result files for the {algorithm} algorithm, "
-                f"{self.dataset} dataset and for the res_type {res_type}."
+                f"{self.dataset} dataset, and for the res_type {res_type}."
             )
-        return result, algorithm_w_type
 
-    def _load_procedure(self, file, algorithm, algo_type):
-        if (self.algorithms_metadata[algorithm]["preselected_algo_type"] != "") & (
-            self.algorithms_metadata[algorithm]["preselected_algo_type"] == algo_type
-        ):
-            with open(
-                f"{self.algorithms_metadata[algorithm]['path_to_output_files']}/{file}",
-                "rb",
-            ) as handle:
-                result = pickle.load(handle)
-                algorithm_w_type = (
-                    f"{self.algorithms_metadata[algorithm]['algo_path']}_{algo_type}"
+        return self._load_procedure(
+            file_paths[0], algorithm, algo_metadata["preselected_algo_type"]
+        )
+
+    def _get_matching_files(self, algorithm, res_type, res_measure):
+        base_path = self.algorithms_metadata[algorithm]["path_to_output_files"]
+        all_files = os.listdir(base_path)
+
+        def file_matches_criteria(file_name):
+            if self.dataset not in file_name:
+                return False
+            if (
+                ("orig" in file_name)
+                if self.load_transformed
+                else ("orig" not in file_name)
+            ):
+                return False
+            if (
+                self.use_version_to_search
+                and self.algorithms_metadata[algorithm]["version"] in file_name
+                and res_type in file_name
+                and res_measure in file_name
+                and "results" in file_name
+                and (
+                    self.transf_transformation is None
+                    or self.transf_transformation in file_name
                 )
+                and (self.transf_version is None or self.transf_version in file_name)
+                and (self.transf_sample is None or self.transf_sample in file_name)
+            ):
+                return True
+            return False
 
-        elif self.algorithms_metadata[algorithm]["preselected_algo_type"] == "":
-            with open(
-                f"{self.path}/{self.algorithms_metadata[algorithm]['algo_path']}/{file}",
-                "rb",
-            ) as handle:
-                result = pickle.load(handle)
-                algorithm_w_type = (
-                    f"{self.algorithms_metadata[algorithm]['algo_path']}{algo_type}"
-                )
+        return [
+            os.path.join(base_path, file)
+            for file in all_files
+            if file_matches_criteria(file)
+        ]
 
+    def _load_procedure(self, file_path, algorithm, algo_type):
+        algo_metadata = self.algorithms_metadata[algorithm]
+        result = dict()
+        with open(file_path, "rb") as handle:
+            result = pickle.load(handle)
+        algorithm_w_type = (
+            f"{algo_metadata['algo_path']}_{algo_type}"
+            if algo_type
+            else f"{algo_metadata['algo_path']}"
+        )
         return result, algorithm_w_type
 
     # -------- Compute results and error metrics -------- #
