@@ -12,6 +12,7 @@ from htsexperimentation.compute_results.results_handler_aggregator import (
     aggregate_and_save,
     aggregate_results,
     aggregate_results_plot_hierarchy,
+    create_metrics_file,
 )
 import seaborn as sns
 
@@ -22,14 +23,52 @@ plt.rcParams.update({"font.size": 8})
 class TestModel(unittest.TestCase):
     def setUp(self):
         self.datasets = ["tourism"]
-        self.algorithms = ["gpf", "mint", "deepar"]  # , "mint", "deepar"]
+        self.algorithms = ["mint", "deepar", "tft", "ets"]  # , "mint", "deepar"]
         self.err_metric = "mase"
 
         self.transformations = ["jitter", "scaling", "magnitude_warp", "time_warp"]
-        self.versions = ["v0", "v1", "v2", "v3", "v4", "v5"]
+        self.versions = ["orig", "v0", "v1", "v2", "v3", "v4", "v5"]
         self.samples = ["s0", "s1", "s2"]
 
         self.results_path = "./results/"
+
+        self.algo_versions = dict()
+        self.algo_versions["tft"] = "0.3.24"
+        self.algo_versions["deepar"] = "0.3.20"
+        self.algo_versions["mint"] = "0.3.20"
+        self.algo_versions["ets"] = "0.3.20"
+
+    def test_create_metrics_file_orig(self):
+        load_transformed = False
+        for dataset in self.datasets:
+            create_metrics_file(
+                algorithms=self.algorithms,
+                transformations=self.transformations,
+                versions=self.versions,
+                samples=self.samples,
+                dataset=dataset,
+                results_path=self.results_path,
+                load_transformed=load_transformed,
+            )
+            # Assert that files are created
+            for algorithm in self.algorithms:
+                algo_version = self.algo_versions[algorithm]
+                for transformation in self.transformations:
+                    versions_to_check = (
+                        self.versions if load_transformed == True else ["orig"]
+                    )
+                    for version in versions_to_check:
+                        samples_to_check = self.samples if version != "orig" else ["s0"]
+
+                        for sample in samples_to_check:
+                            expected_filename = f"metrics_gp_cov_{dataset}_{algorithm}_{transformation}_{version}_{sample}_wwhole_{algo_version}.pickle"
+                            expected_path = os.path.join(
+                                self.results_path, algorithm, expected_filename
+                            )
+                            self.assertTrue(
+                                os.path.exists(expected_path),
+                                f"File not found: {expected_path}",
+                            )
 
     def test_load_transformed_datasets_mint(self):
         for dataset in self.datasets:
@@ -97,104 +136,72 @@ class TestModel(unittest.TestCase):
 
     def test_plot_transformed_datasets(self):
         for dataset in self.datasets:
-            res = [None, None, None]
-            to_show = [True, True, True]
             ylims = (-0.5, 6)
-            df_res_tourism = list(
+            df_res = list(
                 create_dataframes_to_plot(
-                    dataset, gpf=True, mint=True, deepar=True, err_metric="mase"
+                    dataset=dataset,
+                    algorithms=self.algorithms,
+                    transformations=self.transformations,
+                    versions=self.versions,
+                    samples=self.samples,
+                    results_path=self.results_path,
+                    err_metric="mase",
+                    load_transformed=True,
+                    create_metrics_files=False,
                 )
             )
 
-            i = 0
-            for idx, ele in enumerate(to_show):
-                if ele:
-                    res[idx] = df_res_tourism[i]
-                    i += 1
+            res = []
+            for idx in range(len(self.algorithms)):
+                res.append(df_res[idx])
 
-            plot_results_joint(dataset, *res, err_metric="mase", ylims=ylims)
+            plot_results_joint(dataset, res, self.algorithms, err_metric="mase", default_ylims=ylims)
             plt.show()
 
     def test_plot_radar_single_transf(self):
         for dataset in self.datasets:
-            df_res_tourism = list(
+            df_res = list(
                 create_dataframes_to_plot(
-                    dataset, gpf=True, mint=True, deepar=True, err_metric="mase"
+                    dataset=dataset,
+                    algorithms=self.algorithms,
+                    transformations=self.transformations,
+                    versions=self.versions,
+                    samples=self.samples,
+                    results_path=self.results_path,
+                    err_metric="mase",
+                    load_transformed=True,
+                    create_metrics_files=False,
                 )
             )
-            combined_df = concatenate_transformed_dfs(df_res_tourism, err_metric="mase")
+            combined_df = concatenate_transformed_dfs(df_res, err_metric="mase")
             combined_df = combined_df[
-                (combined_df.transformation == "jittering")
+                (combined_df.transformation == "magnitude_warping")
                 & (combined_df.group == "weighted")
             ]
             plot_radar_transformation_dataset(combined_df)
 
     def test_plot_radar(self):
         for dataset in self.datasets:
-            df_res_tourism = list(
+            df_res = list(
                 create_dataframes_to_plot(
-                    dataset, gpf=True, mint=True, deepar=True, err_metric="mase"
+                    dataset=dataset,
+                    algorithms=self.algorithms,
+                    transformations=self.transformations,
+                    versions=self.versions,
+                    samples=self.samples,
+                    results_path=self.results_path,
+                    err_metric="mase",
+                    load_transformed=True,
+                    create_metrics_files=False,
                 )
             )
-            combined_df = concatenate_transformed_dfs(df_res_tourism, err_metric="mase")
+            combined_df = concatenate_transformed_dfs(df_res, err_metric="mase")
             plot_radar_transformation_dataset(combined_df)
-
-    @staticmethod
-    def generate_pickle_filename(
-        dataset, algorithm, transformation, version, sample, algo_version
-    ):
-        return f"metrics_gp_cov_{dataset}_{algorithm}_{transformation}_{version}_{sample}_wwhole_{algo_version}.pickle"
-
-    def test_results_transformed_store_metrics(self):
-
-        for transformation in self.transformations:
-            for version in self.versions:
-                for sample in self.samples:
-                    _, res = aggregate_results(
-                        datasets=self.datasets,
-                        results_path=self.results_path,
-                        algorithms=self.algorithms,
-                        load_transformed=True,
-                        transformation=transformation,
-                        version=version,
-                        sample=sample,
-                    )
-
-                    aggregate_and_save(
-                        datasets=self.datasets,
-                        results_path=self.results_path,
-                        algorithms=self.algorithms,
-                        transformation=transformation,
-                        version=version,
-                        sample=sample,
-                    )
-
-                    for dataset in self.datasets:
-                        for algorithm in self.algorithms:
-                            algo_version = res[dataset].algorithms_metadata[algorithm][
-                                "version"
-                            ]
-                            expected_filename = self.generate_pickle_filename(
-                                dataset,
-                                algorithm,
-                                transformation,
-                                version,
-                                sample,
-                                algo_version,
-                            )
-                            expected_filepath = os.path.join(
-                                self.results_path, algorithm, expected_filename
-                            )
-
-                            self.assertTrue(
-                                os.path.exists(expected_filepath),
-                                f"Expected file {expected_filepath} not found!",
-                            )
 
     def test_agg_results_transformed(self):
 
         transformation = "magnitude_warp"
-        version = "v5"
+        version = "v3"
         sample = "s0"
 
         _, res = aggregate_results(

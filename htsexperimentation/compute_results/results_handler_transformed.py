@@ -1,3 +1,4 @@
+from typing import Generator, List
 import pickle
 import os
 from collections import Iterable
@@ -5,6 +6,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from htsexperimentation.compute_results.results_handler_aggregator import (
+    create_metrics_file,
+)
 
 
 def flatten(lis):
@@ -44,7 +48,15 @@ def is_valid_file(path, algorithm, dataset):
         and "metrics" in path
         and dataset in path
         and any(
-            sub_string in path for sub_string in ["exact_", "mint_", "deepar_", "ets_"]
+            sub_string in path
+            for sub_string in [
+                "exact_",
+                "mint_",
+                "deepar_",
+                "ets_",
+                "tft_",
+                "deepvarhierarchical_",
+            ]
         )
         and "vae" not in path
         and ("whole" in path or "orig" in path)
@@ -56,9 +68,9 @@ def parse_filename(file, dataset):
     idx_dataset_name = flatten_file_name.index(dataset)
 
     if "orig" in file:
-        sample = flatten_file_name[-1]
-        version = flatten_file_name[-2]
-        transformation = "_".join(flatten_file_name[idx_dataset_name + 2 : -2])
+        sample = flatten_file_name[-2]
+        version = flatten_file_name[-3]
+        transformation = "_".join(flatten_file_name[idx_dataset_name + 2 : -3])
     else:
         sample = flatten_file_name[-2]
         version = flatten_file_name[-3]
@@ -191,44 +203,61 @@ def compute_new_metrics(df_clean, err_metric="rmse"):
     return df_new
 
 
-def create_dataframes_to_plot(d, gpf=None, mint=None, deepar=None, ets_bu=None, err_metric='rmse'):
-    if gpf:
-        dict_gpf = compute_aggregated_results_dict(
-            algorithm="gpf", dataset=d, err_metric=err_metric
-        )
-        df_gpf = compute_aggregated_results_df(dict_gpf, err_metric=err_metric)
-        df_gpf_err = compute_new_metrics(df_gpf, err_metric=err_metric)
-        df_gpf_err["algorithm"] = "gpf"
-        yield df_gpf_err
+def create_dataframes_to_plot(
+    dataset: str,
+    algorithms: List[str],
+    transformations: List[str],
+    versions: List[str],
+    samples: List[str],
+    results_path: str,
+    load_transformed: bool,
+    err_metric: str = "rmse",
+    create_metrics_files: bool = False,
+) -> Generator[pd.DataFrame, None, None]:
+    """
+    Creates and yields dataframes for plotting based on the specified error metric
+    for each algorithm in the given dataset. It first calls 'create_metrics_file' to
+    prepare metrics files for the algorithms.
 
-    if mint:
-        dict_mint = compute_aggregated_results_dict(
-            algorithm="mint", dataset=d, err_metric=err_metric
-        )
-        df_mint = compute_aggregated_results_df(dict_mint, err_metric=err_metric)
-        df_mint["group"] = df_mint.group.str.lower()
-        df_mint_err = compute_new_metrics(df_mint, err_metric=err_metric)
-        df_mint_err["algorithm"] = "mint"
-        yield df_mint_err
+    Args:
+        dataset (str): The dataset for which to compute results.
+        algorithms (List[str]): A list of algorithms to process.
+        transformations (List[str]): List of transformations to apply.
+        versions (List[str]): List of versions to consider.
+        samples (List[str]): List of samples to use.
+        results_path (str): Path to store the results.
+        err_metric (str, optional): The error metric to use. Defaults to 'rmse'.
 
-    if deepar:
-        dict_deepar = compute_aggregated_results_dict(
-            algorithm="deepar", dataset=d, err_metric=err_metric
-        )
-        df_deepar = compute_aggregated_results_df(dict_deepar, err_metric=err_metric)
-        df_deepar_err = compute_new_metrics(df_deepar, err_metric=err_metric)
-        df_deepar_err["algorithm"] = "deepar"
-        yield df_deepar_err
+    Yields:
+        Generator[pd.DataFrame, None, None]: A generator that yields a dataframe for each algorithm.
+    """
 
-    if ets_bu:
-        dict_ets = compute_aggregated_results_dict(
-            algorithm="ets_bu", dataset=d, err_metric=err_metric
+    if create_metrics_files:
+        # Preparing metrics file for each algorithm
+        create_metrics_file(
+            algorithms=algorithms,
+            transformations=transformations,
+            versions=versions,
+            samples=samples,
+            dataset=dataset,
+            results_path=results_path,
+            load_transformed=load_transformed,
         )
-        df_ets = compute_aggregated_results_df(dict_ets, err_metric=err_metric)
-        df_ets["group"] = df_ets.group.str.lower()
-        df_ets_err = compute_new_metrics(df_ets, err_metric=err_metric)
-        df_ets_err["algorithm"] = "ets"
-        yield df_ets_err
+
+    # Compute and yield dataframes for plotting
+    for algorithm in algorithms:
+        dict_alg = compute_aggregated_results_dict(
+            algorithm=algorithm, dataset=dataset, err_metric=err_metric
+        )
+        df_alg = compute_aggregated_results_df(dict_alg, err_metric=err_metric)
+
+        # Apply specific transformations if needed based on the algorithm
+        if algorithm in ["mint", "ets_bu"]:
+            df_alg["group"] = df_alg.group.str.lower()
+
+        df_alg_err = compute_new_metrics(df_alg, err_metric=err_metric)
+        df_alg_err["algorithm"] = algorithm
+        yield df_alg_err
 
 
 def plot_results(df, err_metric="mase"):
@@ -271,103 +300,54 @@ def plot_results_perc_diff(df):
         ax[i].set_title(transf[i], fontsize=22)
 
 
-def plot_results_joint(
-    d, df1=None, df2=None, df3=None, df4=None, err_metric="mase", ylims=(-3, 10)
-):
-    if err_metric == "mase":
-        ylim = (0, 4)
-    elif err_metric == "rmse":
-        ylim = (0, 15000)
-    elif err_metric == "pct_change":
-        ylim = ylims
-    elif err_metric == "rel_change":
-        ylim = (-1, 3.5)
+def set_ylim(err_metric, default_ylims=(-3, 10)):
+    ylim_mappings = {
+        "mase": (0, 4),
+        "rmse": (0, 15000),
+        "pct_change": default_ylims,
+        "rel_change": (-1, 3.5)
+    }
+    return ylim_mappings.get(err_metric, default_ylims)
 
-    fig, ax = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(12, 8))
-    if df1 is not None:
-        transf = df1.transformation.unique()
-        transf.sort()
-        for i in range(len(transf)):
-            fg = sns.lineplot(
-                x="version",
-                y=err_metric,
-                hue="group",
-                marker="o",
-                data=df1.loc[df1["transformation"] == transf[i]].sort_values(
-                    ["version", "group"]
-                ),
-                ax=ax[i, 0],
-            )
-            ax[i, 0].set_ylim(*ylim)
-            ax[i, 0].set_title(transf[i], fontsize=12)
-            ax[i, 0].axhline(y=0, color="grey", linestyle="dashed")
-            ax[i, 0].get_legend().remove()
 
-    if df2 is not None:
-        transf = df2.transformation.unique()
-        transf.sort()
-        for i in range(len(transf)):
-            fg = sns.lineplot(
-                x="version",
-                y=err_metric,
-                hue="group",
-                marker="o",
-                data=df2.loc[df2["transformation"] == transf[i]].sort_values(
-                    ["version", "group"]
-                ),
-                ax=ax[i, 1],
-            )
-            ax[i, 1].set_ylim(*ylim)
-            ax[i, 1].set_title(transf[i], fontsize=12)
-            ax[i, 1].axhline(y=0, color="grey", linestyle="dashed")
-            ax[i, 1].get_legend().remove()
+def plot_transformation(ax, df, err_metric, ylim, column, algorithm_name):
+    transf = df.transformation.unique()
+    transf.sort()
+    for i, transformation in enumerate(transf):
+        sns.lineplot(
+            x="version",
+            y=err_metric,
+            hue="group",
+            marker="o",
+            data=df.loc[df["transformation"] == transformation].sort_values(["version", "group"]),
+            ax=ax[i, column],
+        )
+        ax[i, column].set_ylim(*ylim)
+        if i == 0:
+            # Add bold algorithm name and transformation name to the first row
+            title = f"$\\mathbf{{{algorithm_name}}}$\n\n{transformation}"
+            ax[i, column].set_title(title, fontsize=12)
+        else:
+            ax[i, column].set_title(transformation, fontsize=12)
+        ax[i, column].axhline(y=0, color="grey", linestyle="dashed")
+        ax[i, column].get_legend().remove()
 
-    if df3 is not None:
-        transf = df3.transformation.unique()
-        transf.sort()
-        for i in range(len(transf)):
-            fg = sns.lineplot(
-                x="version",
-                y=err_metric,
-                hue="group",
-                marker="o",
-                data=df3.loc[df3["transformation"] == transf[i]].sort_values(
-                    ["version", "group"]
-                ),
-                ax=ax[i, 2],
-            )
-            ax[i, 2].set_ylim(*ylim)
-            ax[i, 2].set_title(transf[i], fontsize=12)
-            ax[i, 2].axhline(y=0, color="grey", linestyle="dashed")
-            ax[i, 2].get_legend().remove()
 
-    if df4 is not None:
-        transf = df4.transformation.unique()
-        transf.sort()
-        for i in range(len(transf)):
-            fg = sns.lineplot(
-                x="version",
-                y=err_metric,
-                hue="group",
-                marker="o",
-                data=df4.loc[df4["transformation"] == transf[i]].sort_values(
-                    ["version", "group"]
-                ),
-                ax=ax[i, 3],
-            )
-            ax[i, 3].set_ylim(*ylim)
-            ax[i, 3].set_title(transf[i], fontsize=12)
-            ax[i, 3].axhline(y=0, color="grey", linestyle="dashed")
-            if i < len(transf) - 1:
-                ax[i, 3].get_legend().remove()
+def plot_results_joint(d, dataframes, algorithms, err_metric="mase", default_ylims=(-3, 10)):
+    ylim = set_ylim(err_metric, default_ylims)
+    n_rows = max(len(df.transformation.unique()) for df in dataframes if df is not None)
+    n_cols = len(dataframes)
 
-    # plt.setp(ax[3,3].get_legend().get_texts(), fontsize='6') # for legend text
-    # plt.setp(ax[3,3].get_legend().get_title(), fontsize='8') # for legend title
-    plt.setp(ax[3, 3].legend(loc="upper right"))
+    fig, ax = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, figsize=(12, 8))
+
+    for col, df in enumerate(dataframes):
+        if df is not None:
+            plot_transformation(ax, df, err_metric, ylim, col, algorithms[col])
+
+    plt.setp(ax[n_rows - 1, n_cols - 1].legend(loc="upper right"))
     fig.suptitle(d, fontsize=16)
 
     plt.tight_layout()
-    plt.savefig(f"{d}.png", dpi=300, bbox_inches="tight")
 
 
 def plot_res(d, ylims, to_show=[False, False, False, False]):

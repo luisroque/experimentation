@@ -114,50 +114,96 @@ class ResultsHandler:
         if not algo_metadata:
             raise ValueError(f"No metadata found for algorithm: {algorithm}")
 
-        file_paths = self._get_matching_files(algorithm, res_type, res_measure)
+        file_paths, reasons = self._get_matching_files(algorithm, res_type, res_measure)
         if not file_paths:
-            raise ValueError(
-                f"Please make sure that you have result files for the {algorithm} algorithm, "
-                f"{self.dataset} dataset, and for the res_type {res_type}."
+            formatted_reasons = "\n\t- " + "\n\t- ".join(reasons)
+            error_message = (
+                f"No files found for algorithm '{algorithm}', result type '{res_type}', "
+                f"and result measure '{res_measure}'.\nReasons:{formatted_reasons}"
             )
+            raise ValueError(error_message)
 
         return self._load_procedure(
             file_paths[0], algorithm, algo_metadata["preselected_algo_type"]
         )
 
-    def _get_matching_files(self, algorithm, res_type, res_measure):
+    def _get_matching_files(
+        self, algorithm: str, res_type: str, res_measure: str
+    ) -> Tuple[List[str], List[str]]:
         base_path = self.algorithms_metadata[algorithm]["path_to_output_files"]
         all_files = os.listdir(base_path)
 
-        def file_matches_criteria(file_name):
-            if self.dataset not in file_name:
-                return False
-            if (
-                ("orig" in file_name)
-                if self.load_transformed
-                else ("orig" not in file_name)
-            ):
-                return False
-            if (
-                self.use_version_to_search
-                and self.algorithms_metadata[algorithm]["version"] in file_name
-                and res_type in file_name
-                and res_measure in file_name
-                and "results" in file_name
-                and (
-                    self.transf_transformation is None
-                    or self.transf_transformation in file_name
-                )
-                and (self.transf_version is None or self.transf_version in file_name)
-                and (self.transf_sample is None or self.transf_sample in file_name)
-            ):
-                return True
-            return False
+        condition_values = self._get_condition_values(algorithm, res_type, res_measure)
+        condition_met = {condition: False for condition in condition_values.keys()}
 
-        return [
+        matching_files = [
             os.path.join(base_path, file)
             for file in all_files
-            if file_matches_criteria(file)
+            if self._file_matches_criteria(file, condition_values, condition_met)
+        ]
+
+        if not matching_files:
+            all_conditions = self._format_unmet_conditions(condition_values)
+            return [], all_conditions
+
+        unmet_conditions = self._get_unmet_conditions(condition_values, condition_met)
+        return matching_files, unmet_conditions
+
+    def _get_condition_values(
+        self, algorithm: str, res_type: str, res_measure: str
+    ) -> Dict[str, str]:
+        version_in_file_name = "orig"
+        if self.load_transformed:
+            if self.transf_version == "orig":
+                version_in_file_name = "v0"
+            else:
+                version_in_file_name = self.transf_version
+        return {
+            "Dataset in file name": self.dataset,
+            "Correct file format": "_v" if self.load_transformed else "orig",
+            "Algorithm version in file name": self.algorithms_metadata[algorithm].get(
+                "version"
+            ),
+            "Result type in file name": res_type,
+            "Result measure in file name": res_measure,
+            "Keyword 'results' in file name": None,
+            "Transformation in file name": self.transf_transformation,
+            "Version in file name": version_in_file_name,
+            "Sample in file name": self.transf_sample
+            if self.load_transformed
+            else "s0",
+        }
+
+    @staticmethod
+    def _file_matches_criteria(
+        file_name: str,
+        condition_values: Dict[str, str],
+        condition_met: Dict[str, bool],
+    ) -> bool:
+        for condition, value in condition_values.items():
+            if value is None or value in file_name:
+                condition_met[condition] = True
+            else:
+                return False
+        return True
+
+    @staticmethod
+    def _format_unmet_conditions(condition_values: Dict[str, str]) -> List[str]:
+        return [
+            f"{condition} (expected: {value})" if value is not None else condition
+            for condition, value in condition_values.items()
+        ]
+
+    @staticmethod
+    def _get_unmet_conditions(
+        condition_values: Dict[str, str], condition_met: Dict[str, bool]
+    ) -> List[str]:
+        return [
+            f"{condition} (expected: {condition_values[condition]})"
+            if condition_values[condition] is not None and not met
+            else condition
+            for condition, met in condition_met.items()
+            if not met
         ]
 
     def _load_procedure(self, file_path, algorithm, algo_type):

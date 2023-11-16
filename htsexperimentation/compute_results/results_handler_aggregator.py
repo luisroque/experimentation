@@ -53,29 +53,27 @@ def get_aggregate_key_and_freq(dataset_name):
 
 
 def _read_original_data(
-        datasets: List[str],
-        load_transformed: bool = False,
-        transformation: str = None,
-        version: str = None,
-        sample: str = None,
+    datasets: List[str],
+    load_transformed: bool = False,
+    transformation: str = None,
+    version: str = None,
+    sample: str = None,
 ) -> dict:
     data = {}
 
     for dataset in datasets:
-        if load_transformed:
+        if load_transformed and version != 'orig':
             version_idx = int(version[1:])
             sample_idx = int(sample[1:])
             _, freq = get_aggregate_key_and_freq(dataset)
 
-            groups, vis = create_groups_from_data(
-                dataset, 'whole', freq
-            )
+            groups, vis = create_groups_from_data(dataset, "whole", freq)
 
             vis._read_files(f"single_transf_{transformation}")
             groups_transf = deepcopy(groups)
             groups_transf["train"]["data"] = vis.y_new[version_idx, sample_idx][
-                                             : groups_transf["train"]["n"]
-                                             ]
+                : groups_transf["train"]["n"]
+            ]
             groups_transf["predict"]["data"] = vis.y_new[version_idx, sample_idx].T
             groups_transf["predict"]["data_matrix"] = vis.y_new[version_idx, sample_idx]
 
@@ -313,45 +311,141 @@ def aggregate_results_plot_hierarchy(
 
 
 def save_to_pickle(data, filename):
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         pickle.dump(data, f)
 
 
-def generate_pickle_filename(dataset, algorithm, transformation, version, sample, algo_version):
+def generate_pickle_filename(
+    dataset: str,
+    algorithm: str,
+    transformation: str,
+    version: str,
+    sample: str,
+    algo_version: str
+) -> str:
+    """
+    Generates a filename for a pickle file based on various parameters.
+
+    Args:
+        dataset (str): Name of the dataset.
+        algorithm (str): Name of the algorithm.
+        transformation (str): Transformation applied.
+        version (str): Version of the dataset or process.
+        sample (str): Sample identifier.
+        algo_version (str): Version of the algorithm.
+
+    Returns:
+        str: A string representing the filename.
+    """
     return f"metrics_gp_cov_{dataset}_{algorithm}_{transformation}_{version}_{sample}_wwhole_{algo_version}.pickle"
 
 
-def aggregate_and_save(datasets, results_path, algorithms, transformation, version, sample):
+def aggregate_and_save(
+    datasets: List[str],
+    results_path: str,
+    algorithms: List[str],
+    transformation: str,
+    version: str,
+    sample: str,
+    load_transformed: bool,
+):
+    """
+    Aggregates results for a given set of parameters and saves them into a pickle file.
+    Skips saving if the file already exists.
+
+    Args:
+        datasets (List[str]): List of dataset names.
+        results_path (str): Path to store the results.
+        algorithms (List[str]): List of algorithm names.
+        transformation (str): Transformation applied.
+        version (str): Version of the dataset or process.
+        sample (str): Sample identifier.
+    """
     res_gpf, res = aggregate_results(
         datasets=datasets,
         results_path=results_path,
         algorithms=algorithms,
-        load_transformed=True,
+        load_transformed=load_transformed,
         transformation=transformation,
         version=version,
-        sample=sample
+        sample=sample,
     )
 
-    dataset_res = aggregate_results_df(
-        datasets, res
-    )
+    dataset_res = aggregate_results_df(datasets, res)
 
     for dataset in datasets:
-        grouped_data = dataset_res[dataset].groupby(['group', 'algorithm']).mean().reset_index()
+        grouped_data = dataset_res[dataset].groupby(["group", "algorithm"]).mean().reset_index()
         for algorithm in algorithms:
-            algo_version = res[dataset].algorithms_metadata[algorithm]['version']
-            aggregate_results_plot_hierarchy(
-                datasets=[dataset],
-                results=res,
-                algorithm=algorithm,
-                include_uncertainty=False
+            algo_version = res[dataset].algorithms_metadata[algorithm]["version"]
+            pickle_filename = generate_pickle_filename(
+                dataset, algorithm, transformation, version, sample, algo_version
             )
-
-            # Save results to pickle
-            sub_data = grouped_data[grouped_data['algorithm'] == algorithm]
-            error_data = sub_data.set_index('group')['value'].to_dict()
-
-            pickle_filename = generate_pickle_filename(dataset, algorithm, transformation, version, sample, algo_version)
             full_path = os.path.join(results_path, algorithm, pickle_filename)
 
-            save_to_pickle({"mase": error_data}, full_path)
+            if not os.path.exists(full_path):
+                aggregate_results_plot_hierarchy(
+                    datasets=[dataset],
+                    results=res,
+                    algorithm=algorithm,
+                    include_uncertainty=False,
+                )
+
+                sub_data = grouped_data[grouped_data["algorithm"] == algorithm]
+                error_data = sub_data.set_index("group")["value"].to_dict()
+
+                save_to_pickle({"mase": error_data}, full_path)
+            else:
+                print(f"File {full_path} already exists, skipping computation and saving.")
+
+
+def get_version_sample_combinations(load_transformed: bool, versions: List[str], samples: List[str]) -> List[Tuple[str, str]]:
+    """
+    Generates appropriate combinations of versions and samples.
+
+    Args:
+        load_transformed (bool): Indicates whether transformed data is being loaded.
+        versions (List[str]): List of versions.
+        samples (List[str]): List of samples.
+
+    Returns:
+        List[Tuple[str, str]]: List of tuples containing version and sample combinations.
+    """
+    if load_transformed:
+        return [(version, sample) for version in versions for sample in samples]
+    else:
+        # If not loading transformed data, only use 'orig' version and 's0' sample
+        return [('orig', 's0')]
+
+
+def create_metrics_file(
+    algorithms: List[str],
+    transformations: List[str],
+    versions: List[str],
+    samples: List[str],
+    dataset: str,
+    load_transformed: bool,
+    results_path: str = "./results/"
+):
+    """
+    Creates metrics files for various combinations of algorithms, transformations,
+    versions, samples, and datasets.
+
+    Args:
+        algorithms (List[str]): List of algorithms.
+        transformations (List[str]): List of transformations.
+        versions (List[str]): List of versions.
+        samples (List[str]): List of samples.
+        dataset (str): dataset.
+        results_path (str, optional): Base path for saving results. Defaults to "./results/".
+    """
+    for transformation in transformations:
+        for version, sample in get_version_sample_combinations(load_transformed, versions, samples):
+            aggregate_and_save(
+                datasets=[dataset],
+                results_path=results_path,
+                algorithms=algorithms,
+                transformation=transformation,
+                version=version,
+                sample=sample,
+                load_transformed=load_transformed
+            )
